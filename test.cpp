@@ -249,7 +249,12 @@ int main(int argc, char** argv)
 
 	// //查询
 	// sql->SelectData(redbingo, bluebingo, count);
-	// sql->SelectUniqueData();
+	sql->SelectUniqueData();
+	sql->SelectAllData();
+	sql->SelectRepeatData();
+	sql->SelectGetTotalRows();
+	sql->SelectDistinctDataByLineName("red1,red6");
+	sql->SelectDistinctDataAmountByLineName("red1");
 	// sql->SelectUniqueDataAmount();
 	sql->CloseDB();
 	return 0;

@@ -244,7 +244,208 @@ bool sqlite_tb::SelectUniqueData()
 	// 	printf("\r\n");
 	// }
     sqlite3_free_table(db_result);
-    printf("nrow = %d\r\n", nrow);
+    printf("[%s]--nrow = %d\r\n",__FUNCTION__, nrow);
+    db_result = NULL;
+	return true;
+}
+
+//查找所有重复的行大于等于2的所有行数据
+bool sqlite_tb::SelectRepeatData()
+{
+    char *zerrMsg = NULL;
+	int nrow = 0, ncolumn = 0;
+    // int i = 0, j = 0;
+	char** db_result = NULL;
+    const char* sqlcmd = "select * from tbldatas "
+                         "where (red1,red2,red3,red4,red5,red6,blue1) "
+                         "in (select red1,red2,red3,red4,red5,red6,blue1 "
+                         "from tbldatas group by red1,red2,red3,red4,red5,red6,blue1 having count(*) >= 2);";
+    
+	int ret = sqlite3_get_table(db, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
+	if (ret != SQLITE_OK)
+	{
+        const char *errMsg = NULL; 
+        printf("select error: %s\n", zerrMsg);
+        sqlite3_free(zerrMsg);
+        zerrMsg = NULL;
+        errMsg = sqlite3_errmsg(db);
+        printf("select error:%s\r\n", errMsg);
+		sqlite3_close(db);
+		return false;
+	}
+	
+    int i, j;
+    printf("[%s]--nrow = %d\r\n",__FUNCTION__, nrow);
+	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
+	{
+		for (j = 0; j < ncolumn; j++)
+		{
+			printf("%s  ", db_result[i + j]);
+		}
+		printf("\r\n");
+	}
+    sqlite3_free_table(db_result);
+
+    db_result = NULL;
+	return true;
+}
+
+//查找所有数据
+bool sqlite_tb::SelectAllData()
+{
+    char *zerrMsg = NULL;
+	int nrow = 0, ncolumn = 0;
+	char** db_result = NULL;
+    const char* sqlcmd = "select * from tbldatas;"; 
+    
+	int ret = sqlite3_get_table(db, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
+	if (ret != SQLITE_OK)
+	{
+        const char *errMsg = NULL; 
+        printf("select error: %s\n", zerrMsg);
+        sqlite3_free(zerrMsg);
+        zerrMsg = NULL;
+        errMsg = sqlite3_errmsg(db);
+        printf("select error:%s\r\n", errMsg);
+		sqlite3_close(db);
+		return false;
+	}
+	
+    printf("[%s]--nrow = %d\r\n",__FUNCTION__, nrow);
+    // int i = 0, j = 0;
+	// for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
+	// {
+	// 	for (j = 0; j < ncolumn; j++)
+	// 	{
+	// 		printf("%s  ", db_result[i + j]);
+	// 	}
+	// 	printf("\r\n");
+	// }
+    sqlite3_free_table(db_result);
+    
+    db_result = NULL;
+	return true;
+}
+
+//获取总条目数
+bool sqlite_tb::SelectGetTotalRows()
+{
+    char *zerrMsg = NULL;
+	int nrow = 0, ncolumn = 0;
+	char** db_result = NULL;
+    const char* sqlcmd = "select count(*) from tbldatas;";
+    
+    
+	int ret = sqlite3_get_table(db, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
+	if (ret != SQLITE_OK)
+	{
+        const char *errMsg = NULL; 
+        printf("select error: %s\n", zerrMsg);
+        sqlite3_free(zerrMsg);
+        zerrMsg = NULL;
+        errMsg = sqlite3_errmsg(db);
+        printf("select error:%s\r\n", errMsg);
+		sqlite3_close(db);
+		return false;
+	}
+	
+    int i = 0, j = 0;
+    printf("[%s]\r\n",__FUNCTION__);
+	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
+	{
+		for (j = 0; j < ncolumn; j++)
+		{
+			printf("\t%s  ", db_result[i + j]);
+		}
+		printf("\r\n");
+	}
+    sqlite3_free_table(db_result);
+    
+    db_result = NULL;
+	return true;
+}
+
+//获取统计字段linename列均不一样的数字有哪些，具体列出来
+/**
+ * linename可以是多个字段，中间用“，”逗号隔开；
+*/
+bool sqlite_tb::SelectDistinctDataByLineName(const char *linename)
+{
+    char *zerrMsg = NULL;
+	int nrow = 0, ncolumn = 0;
+	char** db_result = NULL;
+    string sqlcmd = "select distinct ";
+
+    sqlcmd = sqlcmd + linename + " from tbldatas;";
+    
+	int ret = sqlite3_get_table(db, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
+	if (ret != SQLITE_OK)
+	{
+        const char *errMsg = NULL; 
+        printf("select error: %s\n", zerrMsg);
+        sqlite3_free(zerrMsg);
+        zerrMsg = NULL;
+        errMsg = sqlite3_errmsg(db);
+        printf("select error:%s\r\n", errMsg);
+		sqlite3_close(db);
+		return false;
+	}
+	
+    printf("[%s]%s--nrow = %d\r\n",__FUNCTION__, linename, nrow);
+    // int i = 0, j = 0;
+	// for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
+	// {
+	// 	for (j = 0; j < ncolumn; j++)
+	// 	{
+	// 		printf("\t%s  ", db_result[i + j]);
+	// 	}
+	// 	printf("\r\n");
+	// }
+    sqlite3_free_table(db_result);
+    
+    db_result = NULL;
+	return true;
+}
+
+//获取统计字段linename列均不一样的数字有多少个，因为得到的是count()返回的结果，是一个值；
+//不会返回具体是哪些数据；具体列出是哪些数据的接口也有封装；
+/**
+ * linename只能是一个字段，不可以是多个字段
+*/
+bool sqlite_tb::SelectDistinctDataAmountByLineName(const char *linename)
+{
+    char *zerrMsg = NULL;
+	int nrow = 0, ncolumn = 0;
+	char** db_result = NULL;
+    string sqlcmd = "select count(distinct ";
+
+    sqlcmd = sqlcmd + linename + ") from tbldatas;";
+    
+	int ret = sqlite3_get_table(db, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
+	if (ret != SQLITE_OK)
+	{
+        const char *errMsg = NULL; 
+        printf("select error: %s\n", zerrMsg);
+        sqlite3_free(zerrMsg);
+        zerrMsg = NULL;
+        errMsg = sqlite3_errmsg(db);
+        printf("select error:%s\r\n", errMsg);
+		sqlite3_close(db);
+		return false;
+	}
+	
+    int i = 0, j = 0;
+    printf("[%s]%s\r\n", __FUNCTION__, linename);
+	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
+	{
+		for (j = 0; j < ncolumn; j++)
+		{
+			printf("\t%s  ", db_result[i + j]);
+		}
+		printf("\r\n");
+	}
+    sqlite3_free_table(db_result);
+    
     db_result = NULL;
 	return true;
 }
@@ -286,7 +487,7 @@ bool sqlite_tb::SelectData(const vector<uint8> &vred, const vector<uint8> &vblue
 	// 	printf("\n");
 	// }
     sqlite3_free_table(db_result);
-    printf("nrow = %d\r\n", nrow);
+    printf("[%s]by condition --nrow = %d\r\n",__FUNCTION__, nrow);
     retcount = nrow;
     db_result = NULL;
 	return true;
@@ -301,8 +502,12 @@ select count(red1,red2,red3,red4,red5,red6,blue1) from tbldatas;   等同于sele
 select * from tbldatas group by red1,red2,red3,red4,red5,red6,blue1 having count(*) >= 2;   
 //选出red1和red6字段的列数据相同的行的具体数据；
 select red1,red6 from tbldatas group by red1,red2,red3,red4,red5,red6,blue1 having count(*) >= 2;
+select red1,red6 from tbldatas group by red1,red6 having count(*) >= 2;
+select * from tbldatas where (red1,red6) in (select red1,red6 from tbldatas group by red1,red6 having count(*) >= 2);
 select red1,red2,red3,red4,red5,red6,blue1 from tbldatas group by red1,red2,red3,red4,red5,red6,blue1 having count(*) >= 2;
 
+
+SELECT * FROM tbldatas Where tbldatas.red1 = red1 and red6 = red6;
 
 2，//找出指定列重复的行的所有行的具体数据
 select * from tbldatas where (red1,red2,red3,red4,red5,red6,blue1) in (select red1,red2,red3,red4,red5,red6,blue1 from tbldatas group by red1,red2,red3,red4,red5,red6,blue1 having count(*) >= 2);

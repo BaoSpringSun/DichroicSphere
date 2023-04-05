@@ -27,7 +27,12 @@ public:
     void  GenRedCondition(const vector<uint8> &vec, string &cond);
     void  GenBlueCondition(const vector<uint8> &vec, string &cond);
     bool  SelectUniqueData();
+    bool  SelectAllData();
+    bool  SelectRepeatData();
+    bool  SelectGetTotalRows();
     bool  SelectUniqueDataAmount();
+    bool  SelectDistinctDataByLineName(const char *linename);
+    bool  SelectDistinctDataAmountByLineName(const char *linename);
 
 private:
     sqlite3 *db;
