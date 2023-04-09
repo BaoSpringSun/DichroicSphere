@@ -49,7 +49,7 @@ bool sqlite_tb::CloseDB()
     }
     return true;
 }
- 
+
 //创建数据库表
 bool sqlite_tb::CreateTable()
 {
@@ -61,7 +61,7 @@ bool sqlite_tb::CreateTable()
 	int ret = sqlite3_exec(db, sqlcmd, 0, 0, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
-        const char *errMsg = NULL; 
+        const char *errMsg = NULL;
         printf("create error:%s\r\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
@@ -95,7 +95,7 @@ bool sqlite_tb::InsertData()
             datas = datas + buf + ",";
         }
         else
-        {   
+        {
             k = 0;
             datas = datas + buf + ";";
             if(false == InsertData(datas))
@@ -119,7 +119,7 @@ bool sqlite_tb::InsertData()
     fclose(pfile);
     return true;
 }
- 
+
 //插入数据
 bool sqlite_tb::InsertData(const string &data)
 {
@@ -134,7 +134,7 @@ bool sqlite_tb::InsertData(const string &data)
     int ret = sqlite3_exec(db, sqlcmd.c_str(), 0, 0, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
-        const char *errMsg = NULL; 
+        const char *errMsg = NULL;
         printf("insert error:%s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
@@ -157,7 +157,7 @@ bool sqlite_tb::DeleteData(unsigned int date)
 	int ret = sqlite3_exec(db, sqlcmd.c_str(), 0, 0, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
-        const char *errMsg = NULL; 
+        const char *errMsg = NULL;
         printf("delete error:%s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
@@ -176,7 +176,7 @@ bool sqlite_tb::UpdateData()
 	int ret = sqlite3_exec(db, "update tbldatas set red1=25 where date=2003001", 0, 0, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
-        const char *errMsg = NULL; 
+        const char *errMsg = NULL;
         printf("update error:%s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
@@ -198,7 +198,7 @@ void sqlite_tb::GenRedCondition(const vector<uint8> &vec, string &cond)
         {
             cond = cond + "red" + to_string(i) +"=" + to_string(elem) + " or ";
         }
-        cond = cond.substr(0, cond.length()-4) + ") and "; 
+        cond = cond.substr(0, cond.length()-4) + ") and ";
     }
 }
 
@@ -208,7 +208,7 @@ void sqlite_tb::GenBlueCondition(const vector<uint8> &vec, string &cond)
     cond = cond + "(";
     for(const auto &elem:vec)
     {
-        cond = cond + "blue1=" + to_string(elem) + " or "; 
+        cond = cond + "blue1=" + to_string(elem) + " or ";
     }
     cond = cond.substr(0, cond.length()-4) + ");"; //-4 是为了去掉"_or_"
 }
@@ -221,11 +221,11 @@ bool sqlite_tb::SelectUniqueData()
     // int i = 0, j = 0;
 	char** db_result = NULL;
     string sqlcmd = "select distinct red1,red2,red3,red4,red5,red6,blue1 from tbldatas;";
-    
+
 	int ret = sqlite3_get_table(db, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
-        const char *errMsg = NULL; 
+        const char *errMsg = NULL;
         printf("select error: %s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
@@ -234,7 +234,7 @@ bool sqlite_tb::SelectUniqueData()
 		sqlite3_close(db);
 		return false;
 	}
-	
+
 	// for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
 	// {
 	// 	for (j = 0; j < ncolumn; j++)
@@ -260,11 +260,11 @@ bool sqlite_tb::SelectRepeatData()
                          "where (red1,red2,red3,red4,red5,red6,blue1) "
                          "in (select red1,red2,red3,red4,red5,red6,blue1 "
                          "from tbldatas group by red1,red2,red3,red4,red5,red6,blue1 having count(*) >= 2);";
-    
+
 	int ret = sqlite3_get_table(db, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
-        const char *errMsg = NULL; 
+        const char *errMsg = NULL;
         printf("select error: %s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
@@ -273,7 +273,7 @@ bool sqlite_tb::SelectRepeatData()
 		sqlite3_close(db);
 		return false;
 	}
-	
+
     int i, j;
     printf("[%s]--nrow = %d\r\n",__FUNCTION__, nrow);
 	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
@@ -296,12 +296,12 @@ bool sqlite_tb::SelectAllData()
     char *zerrMsg = NULL;
 	int nrow = 0, ncolumn = 0;
 	char** db_result = NULL;
-    const char* sqlcmd = "select * from tbldatas;"; 
-    
+    const char* sqlcmd = "select * from tbldatas;";
+
 	int ret = sqlite3_get_table(db, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
-        const char *errMsg = NULL; 
+        const char *errMsg = NULL;
         printf("select error: %s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
@@ -310,7 +310,7 @@ bool sqlite_tb::SelectAllData()
 		sqlite3_close(db);
 		return false;
 	}
-	
+
     printf("[%s]--nrow = %d\r\n",__FUNCTION__, nrow);
     // int i = 0, j = 0;
 	// for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
@@ -322,7 +322,7 @@ bool sqlite_tb::SelectAllData()
 	// 	printf("\r\n");
 	// }
     sqlite3_free_table(db_result);
-    
+
     db_result = NULL;
 	return true;
 }
@@ -334,12 +334,12 @@ bool sqlite_tb::SelectGetTotalRows()
 	int nrow = 0, ncolumn = 0;
 	char** db_result = NULL;
     const char* sqlcmd = "select count(*) from tbldatas;";
-    
-    
+
+
 	int ret = sqlite3_get_table(db, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
-        const char *errMsg = NULL; 
+        const char *errMsg = NULL;
         printf("select error: %s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
@@ -348,7 +348,7 @@ bool sqlite_tb::SelectGetTotalRows()
 		sqlite3_close(db);
 		return false;
 	}
-	
+
     int i = 0, j = 0;
     printf("[%s]\r\n",__FUNCTION__);
 	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
@@ -360,7 +360,7 @@ bool sqlite_tb::SelectGetTotalRows()
 		printf("\r\n");
 	}
     sqlite3_free_table(db_result);
-    
+
     db_result = NULL;
 	return true;
 }
@@ -377,11 +377,11 @@ bool sqlite_tb::SelectDistinctDataByLineName(const char *linename)
     string sqlcmd = "select distinct ";
 
     sqlcmd = sqlcmd + linename + " from tbldatas;";
-    
+
 	int ret = sqlite3_get_table(db, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
-        const char *errMsg = NULL; 
+        const char *errMsg = NULL;
         printf("select error: %s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
@@ -390,7 +390,7 @@ bool sqlite_tb::SelectDistinctDataByLineName(const char *linename)
 		sqlite3_close(db);
 		return false;
 	}
-	
+
     printf("[%s]%s--nrow = %d\r\n",__FUNCTION__, linename, nrow);
     // int i = 0, j = 0;
 	// for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
@@ -402,7 +402,7 @@ bool sqlite_tb::SelectDistinctDataByLineName(const char *linename)
 	// 	printf("\r\n");
 	// }
     sqlite3_free_table(db_result);
-    
+
     db_result = NULL;
 	return true;
 }
@@ -420,11 +420,11 @@ bool sqlite_tb::SelectDistinctDataAmountByLineName(const char *linename)
     string sqlcmd = "select count(distinct ";
 
     sqlcmd = sqlcmd + linename + ") from tbldatas;";
-    
+
 	int ret = sqlite3_get_table(db, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
-        const char *errMsg = NULL; 
+        const char *errMsg = NULL;
         printf("select error: %s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
@@ -433,7 +433,7 @@ bool sqlite_tb::SelectDistinctDataAmountByLineName(const char *linename)
 		sqlite3_close(db);
 		return false;
 	}
-	
+
     int i = 0, j = 0;
     printf("[%s]%s\r\n", __FUNCTION__, linename);
 	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
@@ -445,7 +445,7 @@ bool sqlite_tb::SelectDistinctDataAmountByLineName(const char *linename)
 		printf("\r\n");
 	}
     sqlite3_free_table(db_result);
-    
+
     db_result = NULL;
 	return true;
 }
@@ -463,12 +463,12 @@ bool sqlite_tb::SelectData(const vector<uint8> &vred, const vector<uint8> &vblue
 
     GenRedCondition(vred, condition);
     GenBlueCondition(vblue, condition);
-    
+
     sqlcmd = sqlcmd + condition;
 	int ret = sqlite3_get_table(db, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
-        const char *errMsg = NULL; 
+        const char *errMsg = NULL;
         printf("select error: %s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
@@ -489,19 +489,19 @@ bool sqlite_tb::SelectData(const vector<uint8> &vred, const vector<uint8> &vblue
 		printf("\n");
 	}
     sqlite3_free_table(db_result);
-    
+
     retcount = nrow;
     db_result = NULL;
 	return true;
 }
 
 /*
-select count(red1,red2,red3,red4,red5,red6,blue1) from tbldatas;   等同于select count(*) from tbldatas;  
+select count(red1,red2,red3,red4,red5,red6,blue1) from tbldatas;   等同于select count(*) from tbldatas;
 也等同于 select count(red1) from tbldatas; 获取总行数；
 
 
 1，//找出指定列出现重复的行的第一个行的具体数据
-select * from tbldatas group by red1,red2,red3,red4,red5,red6,blue1 having count(*) >= 2;   
+select * from tbldatas group by red1,red2,red3,red4,red5,red6,blue1 having count(*) >= 2;
 //选出red1和red6字段的列数据相同的行的具体数据；
 select red1,red6 from tbldatas group by red1,red2,red3,red4,red5,red6,blue1 having count(*) >= 2;
 select red1,red6 from tbldatas group by red1,red6 having count(*) >= 2;
@@ -530,7 +530,7 @@ select * from 表名 where (【字段A列，字段B列，字段C列】) in (sele
 
 
 
-选出red1,red2,red3,red4,red5,red6,blue1等字段列的行数据不相同的数据，<去重复，筛选出所有都是唯一的数据> 
+选出red1,red2,red3,red4,red5,red6,blue1等字段列的行数据不相同的数据，<去重复，筛选出所有都是唯一的数据>
 select distinct red1,red2,red3,red4,red5,red6,blue1 from tbldatas;
 select distinct red6 from tbldatas;
 select distinct red6 from tbldatas order by red6;
@@ -547,11 +547,11 @@ bool sqlite_tb::SelectUniqueDataAmount()
 	// char** db_result = NULL;
     // // string sqlcmd = "select count(red1,red2,red3,red4,red5,red6,blue1) from tbldatas;";
     // string sqlcmd = "select * from tbldatas group by red1,red6,blue1 having count(*) >= 2;";
-    
+
 	// int ret = sqlite3_get_table(db, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
 	// if (ret != SQLITE_OK)
 	// {
-    //     const char *errMsg = NULL; 
+    //     const char *errMsg = NULL;
     //     printf("select error: %s\n", zerrMsg);
     //     sqlite3_free(zerrMsg);
     //     zerrMsg = NULL;
@@ -581,8 +581,8 @@ bool sqlite_tb::SelectUniqueDataAmount()
  * select count(distinct red2) from tbldatas;
  * select distinct red2 from tbldatas order by red2;
  * select * from tbldatas where (red1) in (select red1 from tbldatas group by red1,red2,red3,red4,red5,red6,blue1 having count(*) >= 2);
- * 
- * 
+ *
+ *
 */
 
 

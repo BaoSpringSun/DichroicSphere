@@ -16,9 +16,10 @@ int main(int argc, char** argv)
 	// vector<uint8> redbingo{1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
 	// 						  11,12,13,14,15,16,17,18,19,20,
 	// 						  21,22,23,24,25,26,27,28,29,30,
-	// 						  31,32,33 };//2798
+	// 						  31,32,33 };//2979
 
-	vector<uint8> redbingo{1,6,7,9,10,11,12,14,15,16,18,20,26,27,29,32};
+	// vector<uint8> redbingo{1,6,7,9,10,11,12,14,15,16,18,20,26,27,29,32};//至今出现概率最多的16个数组的组合
+	vector<uint8> redbingo{3,9,11,12,16,19,20,23,25,27,29,30,31,33};//最有概率出现的组合
 
 	const vector<uint8> bluebingo{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};//380
 
@@ -122,7 +123,7 @@ void func1(sqlite_tb *psql, vector<uint8> &vred, const vector<uint8> &vblue)
 {
 	map<int32_t, int32_t> retm;
 
-	if(vred.size() <= 14)
+	if(vred.size() <= 16)
 	{
 		sort(vred.begin(), vred.end(), cmpint);
 		for(const auto &elem:vred)
@@ -192,7 +193,7 @@ void func1(sqlite_tb *psql, vector<uint8> &vred, const vector<uint8> &vblue)
 		{
 			for(const auto &elempair : vecpair)
 			{
-				indexkey = -elempair.first;//选择至今未出现的组合数字
+				indexkey = -elempair.first;//选择至今已出现次数最多的组合数字
 				if((0 != indexvalue)&&(elempair.second == indexvalue))
 				{
 					VecDelIndexElem(vred, indexkey);

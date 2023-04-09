@@ -2,13 +2,14 @@ CC := g++
 #以下是指定编译需要的头文件
 CFLAGS := -g -Wall -O0 -std=c++20#多个不同文件路径的话后面可以继续添加
 CFLAGS += -I include
-# CFLAGS += -I/home/bob/demo_bob/calendar
+CFLAGS += -I/usr/local/include/json
 
 
 #以下是源文件
-SRCS = test.cpp sqlitetbl.cpp #多个不同文件的话后面可以加空格继续添加
+SRCS = test.cpp sqlitetbl.cpp myjson.cpp #多个不同文件的话后面可以加空格继续添加
 #以下是指定需要的库文件
 LIBS := -L/lib -lsqlite3 #多个不同文件路径下的文件的话后面可以加空格继续添加
+LIBS += -L/usr/local/lib -ljsoncpp
 
 #以下是指定目标文件 所有当.c文件变成.o文件
 OBJS = $(SRCS:.cpp=.o)
