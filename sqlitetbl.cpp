@@ -129,7 +129,7 @@ bool sqlite_tb::InsertData(const string &data)
      * insert or replace into table_name：是每次执行时，如果不存在，则添加，如果存在，则更新。
      * insert or ignore into table_name：是每次执行时，如果不存在，则添加，如果存在，则不操作。
     */
-    string sqlcmd = "INSERT INTO tbldatas VALUES " + data;
+    string sqlcmd = "INSERT OR IGNORE INTO tbldatas VALUES " + data;
 
     int ret = sqlite3_exec(db, sqlcmd.c_str(), 0, 0, &zerrMsg);
 	if (ret != SQLITE_OK)
@@ -239,7 +239,7 @@ bool sqlite_tb::SelectUniqueData()
 	// {
 	// 	for (j = 0; j < ncolumn; j++)
 	// 	{
-	// 		printf("%s  ", db_result[i + j]);
+	// 		printf("%s\t", db_result[i + j]);
 	// 	}
 	// 	printf("\r\n");
 	// }
@@ -280,7 +280,7 @@ bool sqlite_tb::SelectRepeatData()
 	{
 		for (j = 0; j < ncolumn; j++)
 		{
-			printf("%s  ", db_result[i + j]);
+			printf("%s\t", db_result[i + j]);
 		}
 		printf("\r\n");
 	}
@@ -317,7 +317,7 @@ bool sqlite_tb::SelectAllData()
 	// {
 	// 	for (j = 0; j < ncolumn; j++)
 	// 	{
-	// 		printf("%s  ", db_result[i + j]);
+	// 		printf("%s\t", db_result[i + j]);
 	// 	}
 	// 	printf("\r\n");
 	// }
@@ -355,7 +355,7 @@ bool sqlite_tb::SelectGetTotalRows()
 	{
 		for (j = 0; j < ncolumn; j++)
 		{
-			printf("\t%s  ", db_result[i + j]);
+			printf("\t%s\t", db_result[i + j]);
 		}
 		printf("\r\n");
 	}
@@ -397,7 +397,7 @@ bool sqlite_tb::SelectDistinctDataByLineName(const char *linename)
 	// {
 	// 	for (j = 0; j < ncolumn; j++)
 	// 	{
-	// 		printf("\t%s  ", db_result[i + j]);
+	// 		printf("\t%s\t", db_result[i + j]);
 	// 	}
 	// 	printf("\r\n");
 	// }
@@ -440,7 +440,7 @@ bool sqlite_tb::SelectDistinctDataAmountByLineName(const char *linename)
 	{
 		for (j = 0; j < ncolumn; j++)
 		{
-			printf("\t%s  ", db_result[i + j]);
+			printf("\t%s\t", db_result[i + j]);
 		}
 		printf("\r\n");
 	}
@@ -477,17 +477,19 @@ bool sqlite_tb::SelectData(const vector<uint8> &vred, const vector<uint8> &vblue
 		sqlite3_close(db);
 		return false;
 	}
-	// int i, j;
-	// for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
-	// {
-	// 	for (j = 0; j < ncolumn; j++)
-	// 	{
-	// 		printf("%s  ", db_result[i + j]);
-	// 	}
-	// 	printf("\n");
-	// }
-    sqlite3_free_table(db_result);
+
     printf("[%s]by condition --nrow = %d\r\n",__FUNCTION__, nrow);
+	int i, j;
+	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
+	{
+		for (j = 0; j < ncolumn; j++)
+		{
+			printf("%s\t", db_result[i + j]);
+		}
+		printf("\n");
+	}
+    sqlite3_free_table(db_result);
+    
     retcount = nrow;
     db_result = NULL;
 	return true;
@@ -563,7 +565,7 @@ bool sqlite_tb::SelectUniqueDataAmount()
 	// {
 	// 	for (j = 0; j < ncolumn; j++)
 	// 	{
-	// 		printf("%s  ", db_result[i + j]);
+	// 		printf("%s\t", db_result[i + j]);
 	// 	}
 	// 	printf("\n");
 	// }
