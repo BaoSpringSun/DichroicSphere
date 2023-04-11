@@ -478,16 +478,16 @@ bool sqlite_tb::SelectData(const vector<uint8> &vred, const vector<uint8> &vblue
 		return false;
 	}
 
-    printf("[%s]by condition --nrow = %d\r\n",__FUNCTION__, nrow);
-	int i, j;
-	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
-	{
-		for (j = 0; j < ncolumn; j++)
-		{
-			printf("%s\t", db_result[i + j]);
-		}
-		printf("\n");
-	}
+    // printf("[%s]by condition --nrow = %d\r\n",__FUNCTION__, nrow);
+	// int i, j;
+	// for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
+	// {
+	// 	for (j = 0; j < ncolumn; j++)
+	// 	{
+	// 		printf("%s\t", db_result[i + j]);
+	// 	}
+	// 	printf("\n");
+	// }
     sqlite3_free_table(db_result);
 
     retcount = nrow;

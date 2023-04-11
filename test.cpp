@@ -37,7 +37,7 @@ int main(int argc, char** argv)
 	// 更新
 	// sql->UpdateData();
 
-#if 1
+#if 0
 	// 查询服务
 	uint32 count = 0;
 	sql->SelectData(redbingo, bluebingo, count);//复式计算方式
@@ -123,7 +123,7 @@ void func1(sqlite_tb *psql, vector<uint8> &vred, const vector<uint8> &vblue)
 {
 	map<int32_t, int32_t> retm;
 
-	if(vred.size() <= 16)
+	if(vred.size() <= 8)
 	{
 		sort(vred.begin(), vred.end(), cmpint);
 		for(const auto &elem:vred)
@@ -169,7 +169,7 @@ void func1(sqlite_tb *psql, vector<uint8> &vred, const vector<uint8> &vblue)
 		}
 		printf("#############################################\r\n");
 
-#if 0
+#if 1
 		indexvalue = vecpair.back().second;
 		if(0 != indexvalue)
 		{
