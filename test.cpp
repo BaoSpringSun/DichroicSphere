@@ -13,13 +13,25 @@ void findRule();
 
 int main(int argc, char** argv)
 {
-	// vector<uint8> redbingo{1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-	// 						  11,12,13,14,15,16,17,18,19,20,
-	// 						  21,22,23,24,25,26,27,28,29,30,
-	// 						  31,32,33 };//2979
+	vector<uint8> redbingo{1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+							  11,12,13,14,15,16,17,18,19,20,
+							  21,22,23,24,25,26,27,28,29,30,
+							  31,32,33 };//
 
 	// vector<uint8> redbingo{1,6,7,9,10,11,12,14,15,16,18,20,26,27,29,32};//至今出现概率最多的16个数组的组合
-	vector<uint8> redbingo{3,9,11,12,16,19,20,23,25,27,29,30,31,33};//最有概率出现的组合
+	// vector<uint8> redbingo{6,10,11,14,15,20,26,29};
+	// vector<uint8> redbingo{2,8,9,10,11,16,17,29};
+	// vector<uint8> redbingo{2,4,7,8,9,10,11,16,17,18,20,22,27,29};
+
+
+// 1       2       4       5       6       7       8       9       10      11      12      13      14      15      16      17      18      20      22      25      26      27      29      30      32
+// vector<uint8> redbingo{3,19,21,23,24,28,31};
+
+
+// vector<uint8> redbingo{2,3,4,6,7,8,9,11,12,13,15,18,19,20,21,23,24,25,27,28,29,30,31,32,33};
+
+	// vector<uint8> redbingo{3,9,11,12,16,19,20,23,25,27,29,30,31,33};//最有概率出现的组合
+	// vector<uint8> redbingo{3,7,9,11,12,19,20,27,28,29,30,31,33};
 
 	const vector<uint8> bluebingo{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};//380
 
@@ -54,7 +66,7 @@ int main(int argc, char** argv)
 	// sql->SelectUniqueDataAmount();
 	sql->CloseDB();
 
-	findRule();
+	// findRule();
 
 	return 0;
 }
@@ -123,7 +135,7 @@ void func1(sqlite_tb *psql, vector<uint8> &vred, const vector<uint8> &vblue)
 {
 	map<int32_t, int32_t> retm;
 
-	if(vred.size() <= 8)
+	if(vred.size() <= 22)
 	{
 		sort(vred.begin(), vred.end(), cmpint);
 		for(const auto &elem:vred)
