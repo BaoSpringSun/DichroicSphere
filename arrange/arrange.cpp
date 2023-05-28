@@ -2,7 +2,9 @@
 #include <iostream>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <vector>
+#include<sstream>
 #include "arrange.hpp"
 
 using namespace std;
@@ -96,12 +98,6 @@ __int128 Combination(int m, int n)
  * 从一个含有m个元素的数组中选出n个元素的组合；
 */
 
-void recursion( int *oriArr, int oriArrLen,
-                int *resArr, int resArrLen,
-                int start, int index, int remain);
-
-void recursion( const vector<int> oriVec, vector<int> resVec,
-                int start, int index, int remain);
 void sample_arr_main();
 void sample_vec_main();
 
@@ -168,6 +164,58 @@ void recursion( const vector<int> oriVec,
             //针对当前index, 遍历剩余可用的数填充递归
             resVec[index] = oriVec[i];
             recursion(oriVec, resVec, i+1, index+1, remain-1);
+        }
+    }
+}
+
+
+
+string NumberToString(int x)
+{
+	stringstream ss;
+	ss<<x;
+	return ss.str();
+}
+
+
+void recursion( sqlite_tb *sql,
+                const vector<int> oriVec,
+                vector<int> resVec,
+                int start, int index, int remain)
+{
+    if (remain == 0)
+    {
+        static int k = 0;
+        if(k < 100)
+        {
+            k++;
+
+        }
+        else
+        {
+            k = 0;
+        }
+
+        string data = "(";
+        //当待填充的个数为0时，表示结束
+        for(const auto &elem : resVec)
+        {
+            // printf("%d\t", elem);
+            data += NumberToString(elem) + ",";
+        }
+        data = data.substr(0, data.length()-1);//去掉“,”
+        data = data + ");";
+        // printf("\n");
+        // printf("datas = %s\r\n", data.c_str());
+        sql->InsertData(data);
+    }
+    else
+    {
+        for(int i=start; i<static_cast<int>(oriVec.size()); i++)
+        {
+            //针对当前index, 遍历剩余可用的数填充递归
+            resVec[index] = oriVec[i];
+            recursion(sql, oriVec, resVec, i+1, index+1, remain-1);
         }
     }
 }

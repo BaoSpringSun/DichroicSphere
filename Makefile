@@ -33,4 +33,4 @@ all:
 
 #make clean 删除所有的.o文件 和生成的可以执行文件
 clean:
-	rm -f $(OBJS) $(EXECUTABLE) mydb
+	rm -f $(OBJS) $(EXECUTABLE) mydb basesqldb

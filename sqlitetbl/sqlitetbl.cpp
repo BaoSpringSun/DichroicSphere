@@ -52,13 +52,15 @@ bool sqlite_tb::CloseDB()
 }
 
 //创建数据库表
-bool sqlite_tb::CreateTable()
+bool sqlite_tb::CreateTable(const char* sqlcmd)
 {
     char *zerrMsg = NULL;
-    const char* sqlcmd = "create table if not exists tbldatas(date int PRIMARY key not null default 2000,"
-                            "red1 int not null default 1,red2 int not null default 1,red3 int not null default 1,"
-                            "red4 int not null default 1,red5 int not null default 1,red6 int not null default 1,"
-                            "blue1 int not null default 1);";
+    if(nullptr == sqlcmd)
+    {
+        printf("create failed:sqlcmd is nullptr.\n");
+        return false;
+    }
+
 	int ret = sqlite3_exec(mDb, sqlcmd, 0, 0, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{

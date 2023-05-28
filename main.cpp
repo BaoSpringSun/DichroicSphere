@@ -16,9 +16,13 @@ void func1(sqlite_tb *psql, vector<uint8> &vred, const vector<uint8> &vblue);
 int64_t funcCnFrom(const int32_t from, const int8_t n);
 void findRule();
 void mathematics();
+void createBaseSql();
 
 int main(int argc, char** argv)
 {
+
+#if 0
+
 	// vector<uint8> redbingo{1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
 	// 						  11,12,13,14,15,16,17,18,19,20,
 	// 						  21,22,23,24,25,26,27,28,29,30,
@@ -41,7 +45,11 @@ int main(int argc, char** argv)
     // 打开数据库，不存在，创建数据库db
 	sql->OpenDB();
 	// 创建表
-	sql->CreateTable();
+	const char* sqlcmd = "create table if not exists tbldatas(date int PRIMARY key not null default 2000,"
+                            "red1 int not null default 1,red2 int not null default 1,red3 int not null default 1,"
+                            "red4 int not null default 1,red5 int not null default 1,red6 int not null default 1,"
+                            "blue1 int not null default 1);";
+	sql->CreateTable(sqlcmd);
 	// 插入数据
 	sql->InsertData();
 	// 删除
@@ -70,8 +78,36 @@ int main(int argc, char** argv)
 	mathematics();
 	sample_arrange_main();
 	sample_promise_main();
-
+#else
+	createBaseSql();
+#endif
 	return 0;
+}
+
+
+void createBaseSql()
+{
+	const vector<int> oriVec{1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+							  11,12,13,14,15,16,17,18,19,20,
+							  21,22,23,24,25,26,27,28,29,30,
+							  31,32,33 };//
+	// const vector<int> oriVec{2,8,9,10,11,16,17,29};
+    vector<int> resVec(6, 0);
+
+	sqlite_tb *sql = nullptr;
+	sql = new sqlite_tb("./basesqldb");
+    // 打开数据库，不存在，创建数据库db
+	sql->OpenDB();
+	// 创建表
+	const char* sqlcmd = "create table if not exists tbldatas("
+                            "red1 int not null default 1,red2 int not null default 1,red3 int not null default 1,"
+                            "red4 int not null default 1,red5 int not null default 1,red6 int not null default 1);";
+	sql->CreateTable(sqlcmd);
+
+    recursion(sql, oriVec, resVec, 0, 0, resVec.size());
+	sql->SelectGetTotalRows();
+
+	sql->CloseDB();
 }
 
 

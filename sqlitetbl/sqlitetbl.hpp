@@ -18,7 +18,7 @@ public:
 public:
 	bool  OpenDB();//打开数据库，不存在，创建数据库db
     bool  CloseDB();
-	bool  CreateTable();//创建数据库表
+	bool  CreateTable(const char* sqlcmd);//创建数据库表
 	bool  InsertData(const string &data);//插入数据
     bool  InsertData();//插入数据
 	bool  DeleteData(unsigned int date);//删除
