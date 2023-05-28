@@ -10,42 +10,43 @@ using namespace std;
 #define     SOURCE_FILE     "./sourcefile"
 
 
-sqlite_tb::sqlite_tb()
-    :db(NULL)
+sqlite_tb::sqlite_tb(const char* dbFile)
+    : mDb(NULL)
+    , mDbFile(dbFile)
 {
 }
 
 sqlite_tb::~sqlite_tb()
 {
-    if(db)
+    if(mDb)
     {
-        sqlite3_close(db); //关闭数据库连接
-        db = nullptr;
+        sqlite3_close(mDb); //关闭数据库连接
+        mDb = nullptr;
     }
 }
 
 //打开数据库，不存在，创建数据库db
 bool sqlite_tb::OpenDB()
 {
-	int ret = sqlite3_open("./mydb", &db);
+	int ret = sqlite3_open(mDbFile, &mDb);
 	if (ret != SQLITE_OK)
 	{
         const char *errMsg = NULL; //定义错误信息
-        errMsg = sqlite3_errmsg(db); //获取错误信息
+        errMsg = sqlite3_errmsg(mDb); //获取错误信息
         printf("open error:%s\r\n", errMsg);
-        sqlite3_close(db); //关闭数据库连接
+        sqlite3_close(mDb); //关闭数据库连接
 		return false;
 	}
-	printf("open db successful.\r\n");
+	printf("open mDb successful.\r\n");
 	return true;
 }
 
 bool sqlite_tb::CloseDB()
 {
-    if(db)
+    if(mDb)
     {
-        sqlite3_close(db); //关闭数据库连接
-        db = nullptr;
+        sqlite3_close(mDb); //关闭数据库连接
+        mDb = nullptr;
     }
     return true;
 }
@@ -58,16 +59,16 @@ bool sqlite_tb::CreateTable()
                             "red1 int not null default 1,red2 int not null default 1,red3 int not null default 1,"
                             "red4 int not null default 1,red5 int not null default 1,red6 int not null default 1,"
                             "blue1 int not null default 1);";
-	int ret = sqlite3_exec(db, sqlcmd, 0, 0, &zerrMsg);
+	int ret = sqlite3_exec(mDb, sqlcmd, 0, 0, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
         const char *errMsg = NULL;
         printf("create error:%s\r\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
-        errMsg = sqlite3_errmsg(db);
+        errMsg = sqlite3_errmsg(mDb);
         printf("create error:%s\r\n", errMsg);
-		sqlite3_close(db);
+		sqlite3_close(mDb);
 		return false;
 	}
 	printf("create success\n");
@@ -131,16 +132,16 @@ bool sqlite_tb::InsertData(const string &data)
     */
     string sqlcmd = "INSERT OR IGNORE INTO tbldatas VALUES " + data;
 
-    int ret = sqlite3_exec(db, sqlcmd.c_str(), 0, 0, &zerrMsg);
+    int ret = sqlite3_exec(mDb, sqlcmd.c_str(), 0, 0, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
         const char *errMsg = NULL;
         printf("insert error:%s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
-        errMsg = sqlite3_errmsg(db);
+        errMsg = sqlite3_errmsg(mDb);
         printf("insert error:%s\r\n", errMsg);
-		sqlite3_close(db);
+		sqlite3_close(mDb);
 		return false;
 	}
 	// printf("insert success\n");
@@ -154,16 +155,16 @@ bool sqlite_tb::DeleteData(unsigned int date)
     string sqlcmd = "delete from tbldatas where ";
 
     sqlcmd = sqlcmd + "(date=" +  to_string(date) + ");";
-	int ret = sqlite3_exec(db, sqlcmd.c_str(), 0, 0, &zerrMsg);
+	int ret = sqlite3_exec(mDb, sqlcmd.c_str(), 0, 0, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
         const char *errMsg = NULL;
         printf("delete error:%s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
-        errMsg = sqlite3_errmsg(db);
+        errMsg = sqlite3_errmsg(mDb);
         printf("delete error:%s\r\n", errMsg);
-		sqlite3_close(db);
+		sqlite3_close(mDb);
 		return false;
 	}
 	printf("delete success\n");
@@ -173,16 +174,16 @@ bool sqlite_tb::DeleteData(unsigned int date)
 bool sqlite_tb::UpdateData()
 {
     char *zerrMsg = NULL;
-	int ret = sqlite3_exec(db, "update tbldatas set red1=25 where date=2003001", 0, 0, &zerrMsg);
+	int ret = sqlite3_exec(mDb, "update tbldatas set red1=25 where date=2003001", 0, 0, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
         const char *errMsg = NULL;
         printf("update error:%s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
-        errMsg = sqlite3_errmsg(db);
+        errMsg = sqlite3_errmsg(mDb);
         printf("update error:%s\r\n", errMsg);
-		sqlite3_close(db);
+		sqlite3_close(mDb);
 		return false;
 	}
 	printf("update success\n");
@@ -222,16 +223,16 @@ bool sqlite_tb::SelectUniqueData()
 	char** db_result = NULL;
     string sqlcmd = "select distinct red1,red2,red3,red4,red5,red6,blue1 from tbldatas;";
 
-	int ret = sqlite3_get_table(db, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
+	int ret = sqlite3_get_table(mDb, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
         const char *errMsg = NULL;
         printf("select error: %s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
-        errMsg = sqlite3_errmsg(db);
+        errMsg = sqlite3_errmsg(mDb);
         printf("select error:%s\r\n", errMsg);
-		sqlite3_close(db);
+		sqlite3_close(mDb);
 		return false;
 	}
 
@@ -261,16 +262,16 @@ bool sqlite_tb::SelectRepeatData()
                          "in (select red1,red2,red3,red4,red5,red6,blue1 "
                          "from tbldatas group by red1,red2,red3,red4,red5,red6,blue1 having count(*) >= 2);";
 
-	int ret = sqlite3_get_table(db, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
+	int ret = sqlite3_get_table(mDb, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
         const char *errMsg = NULL;
         printf("select error: %s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
-        errMsg = sqlite3_errmsg(db);
+        errMsg = sqlite3_errmsg(mDb);
         printf("select error:%s\r\n", errMsg);
-		sqlite3_close(db);
+		sqlite3_close(mDb);
 		return false;
 	}
 
@@ -298,16 +299,16 @@ bool sqlite_tb::SelectAllData()
 	char** db_result = NULL;
     const char* sqlcmd = "select * from tbldatas;";
 
-	int ret = sqlite3_get_table(db, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
+	int ret = sqlite3_get_table(mDb, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
         const char *errMsg = NULL;
         printf("select error: %s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
-        errMsg = sqlite3_errmsg(db);
+        errMsg = sqlite3_errmsg(mDb);
         printf("select error:%s\r\n", errMsg);
-		sqlite3_close(db);
+		sqlite3_close(mDb);
 		return false;
 	}
 
@@ -336,16 +337,16 @@ bool sqlite_tb::SelectGetTotalRows()
     const char* sqlcmd = "select count(*) from tbldatas;";
 
 
-	int ret = sqlite3_get_table(db, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
+	int ret = sqlite3_get_table(mDb, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
         const char *errMsg = NULL;
         printf("select error: %s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
-        errMsg = sqlite3_errmsg(db);
+        errMsg = sqlite3_errmsg(mDb);
         printf("select error:%s\r\n", errMsg);
-		sqlite3_close(db);
+		sqlite3_close(mDb);
 		return false;
 	}
 
@@ -378,16 +379,16 @@ bool sqlite_tb::SelectDistinctDataByLineName(const char *linename)
 
     sqlcmd = sqlcmd + linename + " from tbldatas;";
 
-	int ret = sqlite3_get_table(db, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
+	int ret = sqlite3_get_table(mDb, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
         const char *errMsg = NULL;
         printf("select error: %s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
-        errMsg = sqlite3_errmsg(db);
+        errMsg = sqlite3_errmsg(mDb);
         printf("select error:%s\r\n", errMsg);
-		sqlite3_close(db);
+		sqlite3_close(mDb);
 		return false;
 	}
 
@@ -421,16 +422,16 @@ bool sqlite_tb::SelectDistinctDataAmountByLineName(const char *linename)
 
     sqlcmd = sqlcmd + linename + ") from tbldatas;";
 
-	int ret = sqlite3_get_table(db, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
+	int ret = sqlite3_get_table(mDb, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
         const char *errMsg = NULL;
         printf("select error: %s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
-        errMsg = sqlite3_errmsg(db);
+        errMsg = sqlite3_errmsg(mDb);
         printf("select error:%s\r\n", errMsg);
-		sqlite3_close(db);
+		sqlite3_close(mDb);
 		return false;
 	}
 
@@ -465,29 +466,29 @@ bool sqlite_tb::SelectData(const vector<uint8> &vred, const vector<uint8> &vblue
     GenBlueCondition(vblue, condition);
 
     sqlcmd = sqlcmd + condition;
-	int ret = sqlite3_get_table(db, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
+	int ret = sqlite3_get_table(mDb, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
         const char *errMsg = NULL;
         printf("select error: %s\n", zerrMsg);
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
-        errMsg = sqlite3_errmsg(db);
+        errMsg = sqlite3_errmsg(mDb);
         printf("select error:%s\r\n", errMsg);
-		sqlite3_close(db);
+		sqlite3_close(mDb);
 		return false;
 	}
 
-    // printf("[%s]by condition --nrow = %d\r\n",__FUNCTION__, nrow);
-	// int i, j;
-	// for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
-	// {
-	// 	for (j = 0; j < ncolumn; j++)
-	// 	{
-	// 		printf("%s\t", db_result[i + j]);
-	// 	}
-	// 	printf("\n");
-	// }
+    printf("[%s]by condition --nrow = %d\r\n",__FUNCTION__, nrow);
+	int i, j;
+	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
+	{
+		for (j = 0; j < ncolumn; j++)
+		{
+			printf("%s\t", db_result[i + j]);
+		}
+		printf("\n");
+	}
     sqlite3_free_table(db_result);
 
     retcount = nrow;
@@ -548,16 +549,16 @@ bool sqlite_tb::SelectUniqueDataAmount()
     // // string sqlcmd = "select count(red1,red2,red3,red4,red5,red6,blue1) from tbldatas;";
     // string sqlcmd = "select * from tbldatas group by red1,red6,blue1 having count(*) >= 2;";
 
-	// int ret = sqlite3_get_table(db, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
+	// int ret = sqlite3_get_table(mDb, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
 	// if (ret != SQLITE_OK)
 	// {
     //     const char *errMsg = NULL;
     //     printf("select error: %s\n", zerrMsg);
     //     sqlite3_free(zerrMsg);
     //     zerrMsg = NULL;
-    //     errMsg = sqlite3_errmsg(db);
+    //     errMsg = sqlite3_errmsg(mDb);
     //     printf("select error:%s\r\n", errMsg);
-	// 	sqlite3_close(db);
+	// 	sqlite3_close(mDb);
 	// 	return false;
 	// }
 	// int i, j;

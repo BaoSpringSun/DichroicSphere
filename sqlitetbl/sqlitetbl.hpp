@@ -12,7 +12,7 @@ typedef unsigned char uchar;
 class sqlite_tb
 {
 public:
-    sqlite_tb();
+    explicit sqlite_tb(const char* dbFile = "./mydb");
     ~sqlite_tb();
 
 public:
@@ -35,5 +35,6 @@ public:
     bool  SelectDistinctDataAmountByLineName(const char *linename);
 
 private:
-    sqlite3 *db;
+    sqlite3*    mDb;
+    const char* mDbFile;
 };
