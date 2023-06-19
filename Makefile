@@ -7,7 +7,11 @@ CFLAGS += -I./arrange/
 CFLAGS += -I./promise/
 CFLAGS += -I./myjson/
 CFLAGS += -I./sqlitetbl/
-
+CFLAGS += -I./task/
+CFLAGS += -I./task2/
+CFLAGS += -I./threadpool/
+CFLAGS += -I./observer/
+CFLAGS += -I./zmq/
 
 #以下是源文件
 SRCS = main.cpp#多个不同文件的话后面可以加空格继续添加
@@ -15,14 +19,23 @@ SRCS += ./sqlitetbl/sqlitetbl.cpp
 SRCS += ./myjson/myjson.cpp
 SRCS += ./arrange/arrange.cpp
 SRCS += ./promise/promise.cpp
+SRCS += ./task/task.cpp
+SRCS += ./task2/task2.cpp
+SRCS += ./threadpool/threadpool.cpp
+SRCS += ./threadpool/threadpool_YunZhiSheng.cpp
+SRCS += ./observer/observer.cpp
+SRCS += ./observer/subserver.cpp
+SRCS += ./observer/testMain.cpp
+SRCS += ./zmq/zmq.cpp
+
 #以下是指定需要的库文件
 LIBS := -L/lib -lsqlite3 #多个不同文件路径下的文件的话后面可以加空格继续添加
 LIBS += -L/usr/local/lib -ljsoncpp
 
 #以下是指定目标文件 所有当.c文件变成.o文件
 OBJS = $(SRCS:.cpp=.o)
-#以下是生成可执行文件
-EXECUTABLE = main
+#以下是生成可执行文件 VER:childBingoFinal_13
+EXECUTABLE = testGetCoverResultDatas2
 
 .PHONY:all clean
 
@@ -33,4 +46,4 @@ all:
 
 #make clean 删除所有的.o文件 和生成的可以执行文件
 clean:
-	rm -f $(OBJS) $(EXECUTABLE) mydb basesqldb
+	rm -f $(OBJS) $(EXECUTABLE)

@@ -1,14 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "sqlite3.h"
-#include "sqlitetbl.hpp"
-#include <string>
+#include <sqlite3.h>
 #include <cstring>
-#include <vector>
+#include<sstream>
+#include "sqlitetbl.hpp"
 using namespace std;
 
-#define     SOURCE_FILE     "./sourcefile"
-
+atomic<bool> sqlite_tb::mDebug = false;
 
 sqlite_tb::sqlite_tb(const char* dbFile)
     : mDb(NULL)
@@ -37,7 +35,7 @@ bool sqlite_tb::OpenDB()
         sqlite3_close(mDb); //关闭数据库连接
 		return false;
 	}
-	printf("open mDb successful.\r\n");
+	// printf("open mDb successful.\r\n");
 	return true;
 }
 
@@ -50,6 +48,26 @@ bool sqlite_tb::CloseDB()
     }
     return true;
 }
+
+
+template <class T>
+string sqlite_tb::NumberToString(T value)
+{
+	std::stringstream ss;
+	ss << value;
+	return ss.str();
+}
+
+template <class T>
+T sqlite_tb::stringToNumber(const string str)
+{
+    T number {};
+    /* can auto remove leading 0 */
+    std::istringstream iss(str);
+    iss >> number;
+    return number;
+}
+
 
 //创建数据库表
 bool sqlite_tb::CreateTable(const char* sqlcmd)
@@ -73,7 +91,7 @@ bool sqlite_tb::CreateTable(const char* sqlcmd)
 		sqlite3_close(mDb);
 		return false;
 	}
-	printf("create success\n");
+	// printf("create success\n");
 	return true;
 }
 
@@ -92,18 +110,19 @@ bool sqlite_tb::InsertData()
 
     while(fgets(buf, sizeof(buf), pfile) != NULL)
     {
-        if(k < 100)
+        if(k < ONCE_INSERT_MAX_ITERM)
         {
             k++;
-            datas = datas + buf + ",";
+            datas = datas + buf;// + ",";
         }
         else
         {
             k = 0;
-            datas = datas + buf + ";";
+            datas = datas + buf;
+            datas = datas.substr(0, datas.find_last_of(',')) + ";";//去掉“,” 加上";"  ---->// datas = datas + buf;// + ";";
             if(false == InsertData(datas))
             {
-                printf("insert data error:%s\r\n", buf);
+                printf("insert data error:%s\r\n", datas.c_str());
             }
             datas = "";
         }
@@ -112,9 +131,10 @@ bool sqlite_tb::InsertData()
 
     if(false == datas.empty())
     {
-        if(false == InsertData(datas.substr(0, datas.length()-1)))//去掉“,”
+        datas = datas.substr(0, datas.find_last_of(',')) + ";";//去掉“,” 加上";"
+        if(false == InsertData(datas))
         {
-            printf("insert data error:%s\r\n", buf);
+            printf("insert data error:%s\r\n", datas.c_str());
         }
         datas = "";
     }
@@ -132,21 +152,30 @@ bool sqlite_tb::InsertData(const string &data)
      * insert or replace into table_name：是每次执行时，如果不存在，则添加，如果存在，则更新。
      * insert or ignore into table_name：是每次执行时，如果不存在，则添加，如果存在，则不操作。
     */
-    string sqlcmd = "INSERT OR IGNORE INTO tbldatas VALUES " + data;
+    string sqlcmd = "insert or ignore into tbldatas VALUES " + data;
 
     int ret = sqlite3_exec(mDb, sqlcmd.c_str(), 0, 0, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
-        const char *errMsg = NULL;
-        printf("insert error:%s\n", zerrMsg);
+        // const char *errMsg = NULL;
+        printf("insert error:%s--sqlcmd:%s\n", zerrMsg, sqlcmd.c_str());
         sqlite3_free(zerrMsg);
         zerrMsg = NULL;
-        errMsg = sqlite3_errmsg(mDb);
-        printf("insert error:%s\r\n", errMsg);
+        // errMsg = sqlite3_errmsg(mDb);
+        // printf("insert error:%s--sqlcmd:%s\r\n", errMsg, sqlcmd.c_str());
 		sqlite3_close(mDb);
 		return false;
 	}
-	// printf("insert success\n");
+
+    // if(mDebug)
+    // {
+    //     printf("insert success--%s\n", data.c_str());
+    // }
+    // else
+    // {
+    //     printf("insert success\n");
+    // }
+
 	return true;
 }
 
@@ -172,6 +201,51 @@ bool sqlite_tb::DeleteData(unsigned int date)
 	printf("delete success\n");
 	return true;
 }
+
+//删除
+bool sqlite_tb::DeleteData(const vector<int> &data)
+{
+    char *zerrMsg = NULL;
+    string datastr = "";
+    string sqlcmd = "delete from tbldatas where (";
+
+    if(data.size() != 6)
+    {
+        printf("error:the input data is wrong~\r\n");
+        return false;
+    }
+
+    for(int i=0;i<static_cast<int>(data.size());i++)
+    {
+        datastr += "(red" + to_string(i+1) + "=" + to_string(data[i]) + ")";
+        if(i < static_cast<int>(data.size()-1))
+        {
+            datastr += "and";
+        }
+        else
+        {
+            datastr += ");";
+        }
+    }
+
+    sqlcmd = sqlcmd + datastr;
+    // printf("DeleteData sqlcmd=%s\r\n", sqlcmd.c_str());
+	int ret = sqlite3_exec(mDb, sqlcmd.c_str(), 0, 0, &zerrMsg);
+	if (ret != SQLITE_OK)
+	{
+        const char *errMsg = NULL;
+        printf("delete error:%s\n", zerrMsg);
+        sqlite3_free(zerrMsg);
+        zerrMsg = NULL;
+        errMsg = sqlite3_errmsg(mDb);
+        printf("delete error:%s\r\n", errMsg);
+		sqlite3_close(mDb);
+		return false;
+	}
+	// printf("delete success\n");
+	return true;
+}
+
 //更新
 bool sqlite_tb::UpdateData()
 {
@@ -192,7 +266,7 @@ bool sqlite_tb::UpdateData()
 	return true;
 }
 
-void sqlite_tb::GenRedCondition(const vector<uint8> &vec, string &cond)
+void sqlite_tb::GenRedCondition(const vector<int> &vec, string &cond)
 {
     for(int i=1;i<7;i++)
     {
@@ -206,7 +280,7 @@ void sqlite_tb::GenRedCondition(const vector<uint8> &vec, string &cond)
 }
 
 
-void sqlite_tb::GenBlueCondition(const vector<uint8> &vec, string &cond)
+void sqlite_tb::GenBlueCondition(const vector<int> &vec, string &cond)
 {
     cond = cond + "(";
     for(const auto &elem:vec)
@@ -248,6 +322,52 @@ bool sqlite_tb::SelectUniqueData()
 	// }
     sqlite3_free_table(db_result);
     printf("[%s]--nrow = %d\r\n",__FUNCTION__, nrow);
+    db_result = NULL;
+	return true;
+}
+
+bool sqlite_tb::SelectResultFromVec8Db(const string &vec6elem, int &retInt)
+{
+    char *zerrMsg = NULL;
+	int nrow = 0, ncolumn = 0;
+    int i = 0, j = 0;
+	char** db_result = NULL;
+    string sqlcmd = "SELECT * FROM tbldatas WHERE elems=\"";
+
+    sqlcmd = sqlcmd + vec6elem + "\";";
+
+	int ret = sqlite3_get_table(mDb, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
+	if (ret != SQLITE_OK)
+	{
+        const char *errMsg = NULL;
+        printf("select error: %s\n", zerrMsg);
+        sqlite3_free(zerrMsg);
+        zerrMsg = NULL;
+        errMsg = sqlite3_errmsg(mDb);
+        printf("select error:%s\r\n", errMsg);
+		sqlite3_close(mDb);
+		return false;
+	}
+
+	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
+	{
+		for (j = 0; j < ncolumn; j++)
+		{
+            int result = stringToNumber<int>(db_result[i + j]);
+            if(0 >= result)
+            {
+                continue;
+            }
+            if(0 < j)
+            {
+                // printf("%s\t", db_result[i + j]);
+                retInt = result;
+            }
+		}
+		// printf("\r\n");
+	}
+    sqlite3_free_table(db_result);
+    // printf("[%s]--nrow = %d\r\n",__FUNCTION__, nrow);
     db_result = NULL;
 	return true;
 }
@@ -294,12 +414,13 @@ bool sqlite_tb::SelectRepeatData()
 }
 
 //查找所有数据
-bool sqlite_tb::SelectAllData()
+bool sqlite_tb::SelectAllData(vector<vector<int>> &resVec)
 {
     char *zerrMsg = NULL;
 	int nrow = 0, ncolumn = 0;
 	char** db_result = NULL;
-    const char* sqlcmd = "select * from tbldatas;";
+    // const char* sqlcmd = "select * from tbldatas;";
+    const char* sqlcmd = "select red1,red2,red3,red4,red5,red6 from tbldatas;";
 
 	int ret = sqlite3_get_table(mDb, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
@@ -314,17 +435,32 @@ bool sqlite_tb::SelectAllData()
 		return false;
 	}
 
-    printf("[%s]--nrow = %d\r\n",__FUNCTION__, nrow);
-    // int i = 0, j = 0;
-	// for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
-	// {
-	// 	for (j = 0; j < ncolumn; j++)
-	// 	{
-	// 		printf("%s\t", db_result[i + j]);
-	// 	}
-	// 	printf("\r\n");
-	// }
+    // printf("[%s]--nrow = %d\r\n",__FUNCTION__, nrow);
+    int i = 0, j = 0;
+	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
+	{
+        vector<int> data;
+        bool isInsert = true;
+		for (j = 0; j < ncolumn; j++)
+		{
+            int result = stringToNumber<int>(db_result[i + j]);
+            if(0 == result)
+            {
+                isInsert = false;
+                break;
+            }
+            data.push_back(result);
+			// printf("%s\t", db_result[i + j]);
+            // printf("%d\t", result);
+		}
+        if(false != isInsert)
+        {
+            resVec.push_back(data);
+        }
+		// printf("\r\n");
+	}
     sqlite3_free_table(db_result);
+    // printf("resVec.size = %ld\r\n", resVec.size());
 
     db_result = NULL;
 	return true;
@@ -337,7 +473,6 @@ bool sqlite_tb::SelectGetTotalRows()
 	int nrow = 0, ncolumn = 0;
 	char** db_result = NULL;
     const char* sqlcmd = "select count(*) from tbldatas;";
-
 
 	int ret = sqlite3_get_table(mDb, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
@@ -353,14 +488,19 @@ bool sqlite_tb::SelectGetTotalRows()
 	}
 
     int i = 0, j = 0;
-    printf("[%s]\r\n",__FUNCTION__);
+    // printf("---[%s]---\r\n",__FUNCTION__);
 	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
 	{
 		for (j = 0; j < ncolumn; j++)
 		{
-			printf("\t%s\t", db_result[i + j]);
+			// printf("\t%s\t", db_result[i + j]);
+            long result = stringToNumber<long>(db_result[i + j]);
+            if(result)
+            {
+                printf("db size is %ld\r\n", result);
+            }
 		}
-		printf("\r\n");
+		// printf("\r\n");
 	}
     sqlite3_free_table(db_result);
 
@@ -455,7 +595,7 @@ bool sqlite_tb::SelectDistinctDataAmountByLineName(const char *linename)
 
 
 //查询<按条件查找>
-bool sqlite_tb::SelectData(const vector<uint8> &vred, const vector<uint8> &vblue, uint32 &retcount)
+bool sqlite_tb::SelectData(const vector<int> &vred, const vector<int> &vblue, int &retcount)
 {
     char *zerrMsg = NULL;
 	int nrow = 0, ncolumn = 0;
@@ -481,16 +621,16 @@ bool sqlite_tb::SelectData(const vector<uint8> &vred, const vector<uint8> &vblue
 		return false;
 	}
 
-    printf("[%s]by condition --nrow = %d\r\n",__FUNCTION__, nrow);
-	int i, j;
-	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
-	{
-		for (j = 0; j < ncolumn; j++)
-		{
-			printf("%s\t", db_result[i + j]);
-		}
-		printf("\n");
-	}
+    // printf("[%s]by condition --nrow = %d\r\n",__FUNCTION__, nrow);
+	// int i, j;
+	// for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
+	// {
+	// 	for (j = 0; j < ncolumn; j++)
+	// 	{
+	// 		printf("%s\t", db_result[i + j]);
+	// 	}
+	// 	printf("\n");
+	// }
     sqlite3_free_table(db_result);
 
     retcount = nrow;
