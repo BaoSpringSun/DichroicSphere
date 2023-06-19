@@ -22,6 +22,12 @@
 
 using namespace std;
 
+/**
+ * 可优化点：	findBaseSqlData  接口的效率的优化
+ *
+*/
+
+
 #define 	USE_TIMER 	0
 
 void func1(sqlite_tb *psql, vector<int> &vred, const vector<int> &vblue);
@@ -36,8 +42,10 @@ void checkResult();
 void checkVecBingoVec(vector<vector<int>> &vecBingoVec);
 void getCoverResultDatas();
 void getCoverResultDatas2();
-void getCoverResultDatas3(const vector<vector<int>> &vecBingoVec);
-void getCoverResultDatas4();
+void getCoverResultDatas3(const map<vector<int>, vector<vector<int>>> &LargeDatas,
+							const vector<vector<int>> &baseVec6Vec);
+void getCoverResultDatas4(const map<vector<int>, vector<vector<int>>> &LargeDatas,
+							const vector<vector<int>> &baseVec6Vec);
 void creatVec6VecResult(const vector<vector<int>> &vec6Vec, const char* dbname);
 void findBaseSqlData(const vector<vector<int>> &vecBingoVec);
 void getVec6VecFromDb(const vector<int> &vec6, vector<vector<int>> &vec6Vec);
@@ -48,6 +56,8 @@ void getVec6Vec1107568(vector<vector<int>> &vec6VecAll);
 void startTask();
 void initObjectDir();
 void testGetCoverResultDatas2();
+void getLargeDatas(map<vector<int>, vector<vector<int>>> &LargeDatas,
+					const vector<vector<int>> &baseVec6Vec);
 
 #if USE_TIMER
 static void sigalrm_handler(int sig);
@@ -151,15 +161,18 @@ int main(int argc, char** argv)
 	sql->CloseDB();
 
 #else
+	map<vector<int>, vector<vector<int>>> LargeDatas = map<vector<int>, vector<vector<int>>>();
 	initObjectDir();
   #if 1
 	createBingoSql();
 	createBaseSqlDb();
+
 	arrange::startTime();
 	printf("-----------startTime-------------\r\n");
 	// genVec6VecForFindBaseSqlData();//(按规则)查找BaseSqlData
 	// checkResult();
-	getCoverResultDatas4();
+	//testGetCoverResultDatas2();//
+	getLargeDatas(LargeDatas, gVecBingoVec);getCoverResultDatas4(LargeDatas, gVecBingoVec);
 	// findTheSameAmountWithComparedVec6Vecs();
 	arrange::endTime();
 	unsigned int index = 0;
@@ -184,8 +197,11 @@ int main(int argc, char** argv)
 #endif
 	sqlite_tb::mDebug = true;
 	startTask();
-	getCoverResultDatas3(gVecBingoVec);//验证得到的所有数据块的覆盖率
+	getLargeDatas(LargeDatas, gVecBingoVec);getCoverResultDatas3(LargeDatas, gVecBingoVec);//验证得到的所有数据块的覆盖率
   #endif
+
+	map<vector<int>, vector<vector<int>>>().swap(LargeDatas);
+	LargeDatas.clear();
 
 #endif
 	return 0;
@@ -223,8 +239,16 @@ void testGetCoverResultDatas2()
 	set<vector<int>> c = set<vector<int>>();
 	set<vector<int>> d = set<vector<int>>();
 	set<vector<int>> e = set<vector<int>>();
-	set<vector<int>> f(a.begin(), a.end());
 	set_union(a.begin(), a.end(), b.begin(), b.end(), insert_iterator<set<vector<int>>>(c, c.begin()));
+	printf("c.size=%ld\r\n", c.size());
+    for (const auto &elementvec : c)
+	{
+        for (const auto &element : elementvec)
+		{
+			printf("%d\t", element);
+		}printf("\r\n");
+    }
+	c.erase(c.begin());
 	printf("c.size=%ld\r\n", c.size());
     for (const auto &elementvec : c)
 	{
@@ -588,20 +612,46 @@ void vectorsPlus(vector<vector<int>> &a, const vector<vector<int>> &b)
 
 unsigned long getVecAddValue(const set<vector<int>> &a, const vector<vector<int>> &b)
 {
+#if 0
 	unsigned long add = a.size();
 	set<vector<int>> uniqueElementsSet(a);
 	uniqueElementsSet.insert(b.begin(), b.end());
 	add = uniqueElementsSet.size() - add;
+
+	/**
+	 * 注意要释放资源，不然会内存泄漏
+	*/
+	set<vector<int>>().swap(uniqueElementsSet);
+	uniqueElementsSet.clear();
+#else
+	/**
+	 * 此方法会快一些
+	*/
+	unsigned long add = 0;
+	set<vector<int>> c = set<vector<int>>();
+	set<vector<int>> ret = set<vector<int>>();
+	c.insert(b.begin(), b.end());
+	set_difference(c.begin(), c.end(), a.begin(), a.end(), insert_iterator<set<vector<int>>>(ret,ret.begin()));
+	add = ret.size();
+	/**
+	 * 注意要释放资源，不然会内存泄漏
+	*/
+	set<vector<int>>().swap(c);
+	c.clear();
+	set<vector<int>>().swap(ret);
+	ret.clear();
+#endif
 	return add;
 }
 
 
 void getFinalVec6Vec(vector<vector<int>> &finalVec6Vec,
-						set<vector<int>> &gVecBingoSet,
-						set<vector<int>> &uniqueElementsSet)
+					 set<vector<int>> &uniqueElementsSet,
+					 set<vector<int>> &leftVec6Vec,
+					 const map<vector<int>, vector<vector<int>>> &LargeDatas)
 {
-	vector<vector<int>> insertVec6Vec = vector<vector<int>>();
 	vector<int> insertVec6 = vector<int>();
+
 	unsigned long addValue = 0;
 	if((uniqueElementsSet.size() <= 0) || (finalVec6Vec.size() <= 0))
 	{
@@ -609,49 +659,83 @@ void getFinalVec6Vec(vector<vector<int>> &finalVec6Vec,
 		return;
 	}
 
-	printf("gVecBingoSet.size=%ld, finalVec6Vec.size=%ld\r\n", gVecBingoSet.size(), finalVec6Vec.size());
-	for(const auto &elemVec:gVecBingoSet)
+	printf("finalVec6Vec.size=%ld\r\n", finalVec6Vec.size());
+	for(const auto &elemVec:leftVec6Vec)
 	{
-		vector<vector<int>> vec6Vec = vector<vector<int>>();
 		unsigned long value = 0;
 
-		getVec6VecFromDb(elemVec, vec6Vec);
-		value = getVecAddValue(uniqueElementsSet, vec6Vec);
+		value = getVecAddValue(uniqueElementsSet, LargeDatas.at(elemVec));
 		if(addValue < value)
 		{
-			// vector<int>().swap(insertVec6);
+			vector<int>().swap(insertVec6);
+			insertVec6.clear();
 			insertVec6 = elemVec;
 			addValue = value;
 		}
 	}
+
+	uniqueElementsSet.insert(LargeDatas.at(insertVec6).begin(), LargeDatas.at(insertVec6).end());
 	finalVec6Vec.push_back(insertVec6);
-	gVecBingoSet.erase(insertVec6);
-	getVec6VecFromDb(insertVec6, insertVec6Vec);
-	uniqueElementsSet.insert(insertVec6Vec.begin(), insertVec6Vec.end());
+	leftVec6Vec.erase(insertVec6);
+
+	vector<int>().swap(insertVec6);
+	insertVec6.clear();
 
 	return;
 }
 
-void getCoverResultDatas4()
+
+
+void getLargeDatas(map<vector<int>, vector<vector<int>>> &LargeDatas,
+					const vector<vector<int>> &baseVec6Vec)
 {
-	vector<vector<int>> initVec6Vec = vector<vector<int>>();
+	arrange::startTime();
+	printf("-----------startTime-------------%s\r\n", __FUNCTION__);
+	for(const auto &elemVec:baseVec6Vec)
+	{
+		vector<vector<int>> vec6Vec = vector<vector<int>>();
+		getVec6VecFromDb(elemVec, vec6Vec);
+		LargeDatas.insert(make_pair(elemVec, vec6Vec));
+		vector<vector<int>>().swap(vec6Vec);
+		vec6Vec.clear();
+	}
+	printf("-----------endTime-------------%ld\r\n", LargeDatas.size());
+	arrange::endTime();
+	return;
+}
+
+/**
+ * baseVec6Vec 传值为gVecBingoVec
+*/
+void getCoverResultDatas4(const map<vector<int>, vector<vector<int>>> &LargeDatas,
+							const vector<vector<int>> &baseVec6Vec)
+{
 	vector<vector<int>> finalVec6Vec = vector<vector<int>>();
 	set<vector<int>> uniqueElementsSet = set<vector<int>>();
-	set<vector<int>> gVecBingoSet = set<vector<int>>();
+	set<vector<int>> leftVec6Vec = set<vector<int>>();
+	unsigned long baseVec6VecSize = baseVec6Vec.size();
 
-	gVecBingoSet.insert(gVecBingoVec.begin(), gVecBingoVec.end());
-	finalVec6Vec.push_back(gVecBingoVec[0]);
-	gVecBingoSet.erase(gVecBingoVec[0]);
-	getVec6VecFromDb(gVecBingoVec[0], initVec6Vec);
-	uniqueElementsSet.insert(initVec6Vec.begin(), initVec6Vec.end());
-	vector<vector<int>>().swap(initVec6Vec);
+	leftVec6Vec.insert(baseVec6Vec.begin(), baseVec6Vec.end());//初始化leftVec6Vec set容器
 
-	while(gVecBingoSet.size() > 0)
+	finalVec6Vec.push_back(baseVec6Vec[0]);
+	leftVec6Vec.erase(baseVec6Vec[0]);
+	uniqueElementsSet.insert(LargeDatas.at(baseVec6Vec[0]).begin(), LargeDatas.at(baseVec6Vec[0]).end());
+
+	while(finalVec6Vec.size() < baseVec6VecSize)
 	{
-		getFinalVec6Vec(finalVec6Vec, gVecBingoSet, uniqueElementsSet);
+		arrange::startTime();
+		printf("-----------startTime-------------%ld\r\n", uniqueElementsSet.size());
+		getFinalVec6Vec(finalVec6Vec, uniqueElementsSet, leftVec6Vec, LargeDatas);
+		arrange::endTime();
 	}
 
-	getCoverResultDatas3(finalVec6Vec);
+	set<vector<int>>().swap(leftVec6Vec);
+	leftVec6Vec.clear();
+
+	set<vector<int>>().swap(uniqueElementsSet);
+	uniqueElementsSet.clear();
+
+	getCoverResultDatas3(LargeDatas, finalVec6Vec);
 	return;
 }
 
@@ -684,7 +768,8 @@ void genFinalBaseVec6Vec(vector<pair<vector<int>, int>> &vec6intPairVec)
 	}
 	printf("finalVec.size=%ld\r\n", finalVec.size());
 
-	creatVec6VecResult(finalVec , OBJECT_EXE_DIR "FinalBaseVec6Vec");
+	// creatVec6VecResult(finalVec , OBJECT_EXE_DIR "FinalBaseVec6Vec");//可执行文件getVecAddValue->
+	creatVec6VecResult(finalVec , OBJECT_EXE_DIR "FinalBaseVec6Vec_0201");//可执行文件FinalBaseVec6Vec_0201->
 	return;
 }
 
@@ -692,24 +777,22 @@ void genFinalBaseVec6Vec(vector<pair<vector<int>, int>> &vec6intPairVec)
  * 用set加insert的特性可去重复来实现：效率最高
  * 得到 BASESQLDBDATA 所对应的所有数据块的覆盖率：
 */
-void getCoverResultDatas3(const vector<vector<int>> &vecBingoVec)
+void getCoverResultDatas3(const map<vector<int>, vector<vector<int>>> &LargeDatas,
+							const vector<vector<int>> &baseVec6Vec)
 {
 	unsigned int index = 0;
 	unsigned long addValue = 0;
 	set<vector<int>> uniqueElementsSet = set<vector<int>>();
 	vector<pair<vector<int>, int>> vec6intPairVec = vector<pair<vector<int>, int>>();
 
-	printf("vecBingoVec.size = %ld\r\n", vecBingoVec.size());
-	for(const auto &gElemVec : vecBingoVec)
+	printf("baseVec6Vec.size = %ld\r\n", baseVec6Vec.size());
+	for(const auto &gElemVec : baseVec6Vec)
 	{
-		vector<vector<int>> vec6Vec = vector<vector<int>>();
-
 		index++;
 		// arrange::startTime();
 		// printf("-----------startTime----%d---------%ld\r\n", index, uniqueElementsSet.size());
 		addValue = uniqueElementsSet.size();
-		getVec6VecFromDb(gElemVec, vec6Vec);
-		uniqueElementsSet.insert(vec6Vec.begin(), vec6Vec.end());
+		uniqueElementsSet.insert(LargeDatas.at(gElemVec).begin(), LargeDatas.at(gElemVec).end());
 		addValue = uniqueElementsSet.size() - addValue;
 		vec6intPairVec.push_back(make_pair(gElemVec, addValue));
 		printf("-----------%s----%d---------%ld\r\n",__FUNCTION__ , index, addValue);
@@ -725,7 +808,13 @@ void getCoverResultDatas3(const vector<vector<int>> &vecBingoVec)
 	vector<vector<int>> mergeVec6Vec(uniqueElementsSet.begin(), uniqueElementsSet.end());
 	printf("mergeVec6Vec.size=%ld\r\n", mergeVec6Vec.size());
 
+	set<vector<int>>().swap(uniqueElementsSet);
+	uniqueElementsSet.clear();
+
 	genFinalBaseVec6Vec(vec6intPairVec);
+
+	vector<pair<vector<int>, int>>().swap(vec6intPairVec);
+	vec6intPairVec.clear();
 	return;
 }
 
