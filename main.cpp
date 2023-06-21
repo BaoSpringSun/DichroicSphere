@@ -36,28 +36,41 @@ void findRule();
 void mathematics();
 void createBaseSqlDb_1107568();
 void createBingoSql();
-void createBaseSqlDb();
+void createVec6vecFromSqlDb(vector<vector<int>> &vec6Vec, const char* sqldbfile);
 void createFinalResultSqlDb();
 void checkResult();
-void checkVecBingoVec(vector<vector<int>> &vecBingoVec);
+void checkVec6VecUnique(vector<vector<int>> &vecBingoVec);
 void getCoverResultDatas();
 void getCoverResultDatas2();
 void getCoverResultDatas3(const map<vector<int>, vector<vector<int>>> &LargeDatas,
 							const vector<vector<int>> &baseVec6Vec);
-void getCoverResultDatas4(const map<vector<int>, vector<vector<int>>> &LargeDatas,
+void getCoverResultDatas4(const map<set<int>, set<set<int>>> &LargeDatas,
+							const set<set<int>> &baseSetSet);
+void getCoverResultDatas5(const map<vector<int>, vector<vector<int>>> &LargeDatas,
 							const vector<vector<int>> &baseVec6Vec);
+void getCoverResultDatas7(const map<vector<int>, set<vector<int>>> &LargeDatas, const vector<vector<int>> &baseVec6Vec);
+void getCoverResultDatas8(const map<vector<int>, set<vector<int>>> &LargeDatas, const vector<vector<int>> &baseVec6Vec);
+void getCoverResultDatas9(const map<vector<int>, set<vector<int>>> &LargeDatas, \
+							const vector<vector<int>> &baseVec6Vec, \
+							vector<vector<int>> &finalVec6Vec);
 void creatVec6VecResult(const vector<vector<int>> &vec6Vec, const char* dbname);
 void findBaseSqlData(const vector<vector<int>> &vecBingoVec);
+void findBaseSqlData3(const vector<vector<int>> &vecBingoVec);
 void getVec6VecFromDb(const vector<int> &vec6, vector<vector<int>> &vec6Vec);
+void getSet6SetFromDb(const set<int> &set6, set<set<int>> &set6Set);
+void getSet6VecFromDb(const vector<int> &vec6, set<vector<int>> &set6Vec);
 unsigned int getTheSameAmountFromVec6Vecs(const vector<vector<int>> &vec6VecA, const vector<vector<int>> &vec6VecB);
-void findTheSameAmountWithComparedVec6Vecs(/*const vector<int> &vec6A,const vector<int> &vec6B*/);
+void findTheSameAmountWithComparedSet6Set();
 void genVec6VecForFindBaseSqlData();
 void getVec6Vec1107568(vector<vector<int>> &vec6VecAll);
 void startTask();
 void initObjectDir();
 void testGetCoverResultDatas2();
-void getLargeDatas(map<vector<int>, vector<vector<int>>> &LargeDatas,
-					const vector<vector<int>> &baseVec6Vec);
+void getLargeSetSetDatas(map<set<int>, set<set<int>>> &LargeDatas,const set<set<int>> &baseVec6Vec);
+void getLargeVecVecDatas(map<vector<int>, vector<vector<int>>> &LargeDatas, const vector<vector<int>> &baseVec6Vec);
+void getLargeSetVecDatas(map<vector<int>, set<vector<int>>> &LargeDatas, const vector<vector<int>> &baseVec6Vec);
+void convertVecVec2SetSet(const vector<vector<int>> &vecVec, set<set<int>> &setSet);
+void convertSetSet2VecVec(const set<set<int>> &setSet, vector<vector<int>> &vecVec);
 
 #if USE_TIMER
 static void sigalrm_handler(int sig);
@@ -66,7 +79,8 @@ static unsigned long cnt = 0;
 #endif
 
 
-static vector<vector<int>> gVecBingoVec;//要去重复
+static vector<vector<int>> gbaseVec6Vec = vector<vector<int>>();//要去重复
+static vector<vector<int>> gFinalVec6Vec = vector<vector<int>>();
 
 struct upperS
 {
@@ -104,76 +118,93 @@ struct cmp2
 	}
 };
 
+void testMergeVec(const vector<vector<int>> &vectorA);
+void testMergeSet(const set<set<int>> &setA);
+void testMergeSetVec(const vector<vector<int>> &vectorA);
+
+typedef void (*sighandler_t) (int);  //定义sighandler_t类型
+
+void catchSigIntSaveFinalVec6VecToDbFile(int signo)
+{
+	arrange::endTime();
+	printf("handle start-----------------catch--%d--%ld\n", signo, gFinalVec6Vec.size());
+	creatVec6VecResult(gFinalVec6Vec , FINALVEC6VEC_DB);
+	printf("handle end-----------------catch--%d\n", signo);
+	arrange::startTime();
+	printf("-----------startTime-------------\r\n");
+}
+
+
+/**
+ * 推荐使用~
+ * 信号队列中，屏蔽连续执行的相同信号只执行一次，在信号执行函数执行期间，该信号已从队列中吐出~
+*/
+void regSignalHandle2()
+{
+	int ret = 0;
+	struct sigaction act;
+
+    act.sa_handler = catchSigIntSaveFinalVec6VecToDbFile;
+    sigemptyset(&act.sa_mask);
+    sigaddset(&act.sa_mask, SIGQUIT); //信号捕捉函数执行期间sa_mask屏蔽字中，3号信号置1  3号信号屏蔽     置1就是屏蔽，置0就是不屏蔽
+	sigaddset(&act.sa_mask, SIGINT);  //信号捕捉函数执行期间 sa_mask屏蔽字中，2号信号置1  2号信号屏蔽     置1就是屏蔽，置0就是不屏蔽
+    act.sa_flags = 0;  //默认属性   信号捕捉函数执行期间，自动屏蔽本信号
+
+    ret = sigaction(SIGINT, &act, NULL);   //注册2号信号
+    if (ret == -1) {
+        perror("sigaction error");
+        exit(1);
+    }
+	return;
+}
+
+void regSignalHandle1()
+{
+	sighandler_t handler;
+    handler = signal(SIGINT, catchSigIntSaveFinalVec6VecToDbFile);  //注册2号信号
+    if(handler == SIG_ERR)
+	{
+        perror("signal error");
+        exit(1);
+    }
+	return;
+}
+
 
 int main(int argc, char** argv)
 {
 
-#if 0
-
-	// vector<int> redbingo{1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-	// 						  11,12,13,14,15,16,17,18,19,20,
-	// 						  21,22,23,24,25,26,27,28,29,30,
-	// 						  31,32,33 };//
-
-	// vector<int> redbingo{1,6,7,9,10,11,12,14,15,16,18,20,26,27,29,32};//至今出现概率最多的16个数组的组合
-	// vector<int> redbingo{6,10,11,14,15,20,26,29};
-	// vector<int> redbingo{2,8,9,10,11,16,17,29};
-	// vector<int> redbingo{2,4,7,8,9,10,11,16,17,18,20,22,27,29};
-	// vector<int> redbingo{3,19,21,23,24,28,31};
-	// vector<int> redbingo{2,3,4,6,7,8,9,11,12,13,15,18,19,20,21,23,24,25,27,28,29,30,31,32,33};
-	vector<int> redbingo{3,9,11,12,16,19,20,23,25,27,29,30,31,33};//最有概率出现的组合
-	// vector<int> redbingo{3,7,9,11,12,19,20,27,28,29,30,31,33};
-
-	const vector<int> bluebingo{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};//380
-
-
-	sqlite_tb *sql = nullptr;
-	sql = new sqlite_tb();
-    // 打开数据库，不存在，创建数据库db
-	sql->OpenDB();
-	// 创建表
-	const char* sqlcmd = "create table if not exists tbldatas(date int PRIMARY key not null default 2000,"
-                            "red1 int not null default 1,red2 int not null default 1,red3 int not null default 1,"
-                            "red4 int not null default 1,red5 int not null default 1,red6 int not null default 1,"
-                            "blue1 int not null default 1);";
-	sql->CreateTable(sqlcmd);
-	// 插入数据
-	sql->InsertData();
-	// 删除
-	sql->DeleteData(2025032);
-	// 更新
-	// sql->UpdateData();
-
-#if 1
-	// 查询服务
-	int count = 0;
-	sql->SelectData(redbingo, bluebingo, count);//复式计算方式
-	sql->SelectUniqueData();
-	sql->SelectRepeatData();
-	sql->SelectGetTotalRows();
-	sql->SelectDistinctDataByLineName("red1,red6");
-	sql->SelectDistinctDataAmountByLineName("red1");
-#else
-	func1(sql, redbingo, bluebingo);
-#endif
-
-	// sql->SelectUniqueDataAmount();
-	sql->CloseDB();
-
-#else
-	map<vector<int>, vector<vector<int>>> LargeDatas = map<vector<int>, vector<vector<int>>>();
+	set<set<int>> gBaseSetSet = set<set<int>>();
+	map<set<int>, set<set<int>>> LargeDatas = map<set<int>, set<set<int>>>();
+	map<vector<int>, vector<vector<int>>> LargeMapVecVecDatas = map<vector<int>, vector<vector<int>>>();
+	map<vector<int>, set<vector<int>>> LargeMapSetVecDatas = map<vector<int>, set<vector<int>>>();
 	initObjectDir();
-  #if 1
+	regSignalHandle2();
+#if 1
 	createBingoSql();
-	createBaseSqlDb();
+	createVec6vecFromSqlDb(gbaseVec6Vec, BASESQLDBDATA);//生成  gbaseVec6Vec
+	createVec6vecFromSqlDb(gFinalVec6Vec, FINALVEC6VEC_DB);//生成  gFinalVec6Vec
+	// convertVecVec2SetSet(gbaseVec6Vec, gBaseSetSet);
+
+	// vector<vector<int>> vec6VecAll = vector<vector<int>>();
+	// getVec6Vec1107568(vec6VecAll);
+	// convertVecVec2SetSet(vec6VecAll, gBaseSetSet);
+	// testMergeVec(vec6VecAll);
+	// testMergeSet(gBaseSetSet);
+	// testMergeSetVec(vec6VecAll);
 
 	arrange::startTime();
 	printf("-----------startTime-------------\r\n");
 	// genVec6VecForFindBaseSqlData();//(按规则)查找BaseSqlData
 	// checkResult();
-	//testGetCoverResultDatas2();//
-	getLargeDatas(LargeDatas, gVecBingoVec);getCoverResultDatas4(LargeDatas, gVecBingoVec);
-	// findTheSameAmountWithComparedVec6Vecs();
+	// testGetCoverResultDatas2();//
+	// getLargeSetSetDatas(LargeDatas, gBaseSetSet);getCoverResultDatas4(LargeDatas, gBaseSetSet);
+	// getLargeVecVecDatas(LargeMapVecVecDatas, gbaseVec6Vec);getCoverResultDatas5(LargeMapVecVecDatas, gbaseVec6Vec);
+
+	// getLargeSetVecDatas(LargeMapSetVecDatas, gbaseVec6Vec);getCoverResultDatas7(LargeMapSetVecDatas, gbaseVec6Vec);
+	getLargeSetVecDatas(LargeMapSetVecDatas, gbaseVec6Vec);getCoverResultDatas9(LargeMapSetVecDatas, gbaseVec6Vec, gFinalVec6Vec);//效率最高
+
+	// findTheSameAmountWithComparedSet6Set();
 	arrange::endTime();
 	unsigned int index = 0;
 	while(true)
@@ -181,7 +212,7 @@ int main(int argc, char** argv)
 		index++;
 		printf("proceeding>>>\r\n");
 		usleep(1000000);
-		if(index > 5)
+		if(index > 50)
 		{
 			break;
 		}
@@ -189,30 +220,148 @@ int main(int argc, char** argv)
   #else
 	// createBaseSqlDb_1107568();
 	createBingoSql();
-	createBaseSqlDb();
-#if USE_TIMER
+	createVec6vecFromSqlDb(gbaseVec6Vec, BASESQLDBDATA);//生成  gbaseVec6Vec
+	createVec6vecFromSqlDb(gFinalVec6Vec, FINALVEC6VEC_DB);//生成  gFinalVec6Vec
+	#if USE_TIMER
 	//~ 设定信号SIGALRM的处理函数
     signal(SIGALRM, sigalrm_handler);
     set_timer();
-#endif
+	#endif
 	sqlite_tb::mDebug = true;
 	startTask();
-	getLargeDatas(LargeDatas, gVecBingoVec);getCoverResultDatas3(LargeDatas, gVecBingoVec);//验证得到的所有数据块的覆盖率
-  #endif
-
-	map<vector<int>, vector<vector<int>>>().swap(LargeDatas);
-	LargeDatas.clear();
-
+	// getLargeVecVecDatas(LargeMapVecVecDatas, gbaseVec6Vec);getCoverResultDatas3(LargeDatas, gbaseVec6Vec);//验证得到的所有数据块的覆盖率
+	// getLargeSetVecDatas(LargeMapSetVecDatas, gbaseVec6Vec);getCoverResultDatas8(LargeMapSetVecDatas, gbaseVec6Vec);
 #endif
+
+	gBaseSetSet.clear();
+	set<set<int>>().swap(gBaseSetSet);
+	LargeDatas.clear();
+	map<set<int>, set<set<int>>>().swap(LargeDatas);
+	LargeMapVecVecDatas.clear();
+	map<vector<int>, vector<vector<int>>>().swap(LargeMapVecVecDatas);
+	LargeMapSetVecDatas.clear();
+	map<vector<int>, set<vector<int>>>().swap(LargeMapSetVecDatas);
+
+	gbaseVec6Vec.clear();
+	vector<vector<int>>().swap(gbaseVec6Vec);
+	gFinalVec6Vec.clear();
+	vector<vector<int>>().swap(gFinalVec6Vec);
+
 	return 0;
 }
+
+void testMergeSetVec(const vector<vector<int>> &vectorA)
+{
+	set<vector<int>> aaa(vectorA.begin(), vectorA.end());
+	set<vector<int>> bbb(aaa);
+	arrange::startTime();
+	printf("-----111111------startTime----%s---------\r\n", __FUNCTION__);
+	bbb.insert(aaa.begin(), aaa.end());
+	arrange::endTime();
+
+	vector<vector<int>> ccc(aaa.begin(), aaa.end());
+
+	printf("-----22222------startTime----%ld---------\r\n", ccc.size());
+	arrange::startTime();
+	ccc.insert(ccc.end(), vectorA.begin(), vectorA.end());
+	// sort(ccc.begin(), ccc.end());
+	// auto iter = std::unique(ccc.begin(), ccc.end());
+    // ccc.erase(iter, ccc.end());
+	// vector<vector<int>>(ccc).swap(ccc);
+	set<vector<int>> ddd(ccc.begin(), ccc.end());
+	printf("-----22222------startTime----%ld---------\r\n", ddd.size());
+	arrange::endTime();
+
+	aaa.clear();set<vector<int>>().swap(aaa);
+	bbb.clear();set<vector<int>>().swap(bbb);
+	ccc.clear();vector<vector<int>>().swap(ccc);
+	// ddd.clear();set<vector<int>>().swap(ddd);
+}
+
+
+void testMergeVec(const vector<vector<int>> &vectorA)
+{
+	vector<vector<int>> tmpVecA = vector<vector<int>>();
+	vector<vector<int>> tmpVecB = vector<vector<int>>();
+	arrange::startTime();
+	printf("-----typedef------startTime----%s---------\r\n", __FUNCTION__);
+	vector<vector<int>> tmpVec(vectorA);
+	arrange::endTime();
+
+	tmpVecA.resize(vectorA.size() * 2);
+	arrange::startTime();
+	printf("-----merge1------startTime----%s---------\r\n", __FUNCTION__);
+	merge(tmpVec.begin(), tmpVec.end(), vectorA.begin(), vectorA.end(), tmpVecA.begin());
+	arrange::endTime();
+
+	arrange::startTime();
+	printf("-----merge2------startTime----%s---------\r\n", __FUNCTION__);
+	merge(tmpVec.begin(), tmpVec.end(), vectorA.begin(), vectorA.end(), back_inserter(tmpVecB));
+	arrange::endTime();
+
+	arrange::startTime();
+	printf("-----insert------startTime----%s---------\r\n", __FUNCTION__);
+	tmpVec.insert(tmpVec.end(), vectorA.begin(), vectorA.end());//最优
+	arrange::endTime();
+
+	vector<vector<int>> tmpVecC(vectorA);
+	arrange::startTime();
+	printf("-----push_back------startTime----%s---------\r\n", __FUNCTION__);
+	for(const auto &xxx:vectorA)//最优
+	{
+		tmpVecC.push_back(xxx);
+	}
+	arrange::endTime();
+
+	vector<vector<int>> tmpVecD(vectorA);
+	tmpVecD.resize(vectorA.size() * 2);
+	arrange::startTime();
+	printf("-----resize push_back------startTime----%s---------\r\n", __FUNCTION__);
+	for(const auto &xxx:vectorA)
+	{
+		tmpVecC.push_back(xxx);
+	}
+	arrange::endTime();
+}
+
+void testMergeSet(const set<set<int>> &setA)
+{
+	arrange::startTime();
+	printf("-----typedef------startTime----%s---------\r\n", __FUNCTION__);
+	set<set<int>> tmpSetA(setA);//最优
+	arrange::endTime();
+
+	arrange::startTime();
+	printf("-----insert------startTime----%s---------\r\n", __FUNCTION__);
+	tmpSetA.insert(setA.begin(), setA.end());
+	arrange::endTime();
+
+	arrange::startTime();
+	printf("-----typedef2------startTime----%s---------\r\n", __FUNCTION__);
+	set<set<int>> tmpSetB = set<set<int>>();
+	tmpSetB.insert(setA.begin(), setA.end());
+	arrange::endTime();
+
+	set<set<int>> tmpSetC(setA);//最优
+	set<set<int>> tmpSetR = set<set<int>>();
+	vector<vector<int>> tmpVecD = vector<vector<int>>();
+	vector<vector<int>> tmpVecE = vector<vector<int>>();
+	arrange::startTime();
+	printf("-----convertSetSet2VecVec-convertSetSet2VecVec-----startTime----%s---------\r\n", __FUNCTION__);
+	convertSetSet2VecVec(tmpSetC, tmpVecD);
+	convertSetSet2VecVec(setA, tmpVecE);
+	tmpVecD.insert(tmpVecD.end(), tmpVecE.begin(), tmpVecE.end());
+	convertVecVec2SetSet(tmpVecD, tmpSetR);
+	arrange::endTime();
+}
+
 
 /**
  * set容器默认是有自动从小到大排序好了的
  * set 的insert可以合并去重复 ， vector不行
  * set_union		取合并部分  a+b		a,b的合集，已去掉重复数据，里面是数据都是唯一的；
  * set_difference	取不同部分	a-b		a有b没有
- * set_intersection	去共有部分	a&b		a,b 都有
+ * set_intersection	取共有部分	a&b		a,b 都有
 */
 void testGetCoverResultDatas2()
 {
@@ -317,7 +466,7 @@ void startTask()
 
 	arrange::startTime();
 	printf("-----------startTime-------------\r\n");
-	for(const auto &elemVec:gVecBingoVec)
+	for(const auto &elemVec:gbaseVec6Vec)
 	{
 		MyTask t(elemVec);//创建任务
     	mt->Push(t);//将任务推送给队列中
@@ -328,12 +477,12 @@ void startTask()
 
 	while(true)
     {
-		if(MyTask::mSave8RetMap.size() < gVecBingoVec.size())
+		if(MyTask::mSave8RetMap.size() < gbaseVec6Vec.size())
 		{
 			printf("proceeding>>>\r\n");
 			usleep(1000000);
 		}
-		else if(MyTask::mSave8RetMap.size() == gVecBingoVec.size())
+		else if(MyTask::mSave8RetMap.size() == gbaseVec6Vec.size())
 		{
 			usleep(1000000);
 			printf("proceeding>>>--->%d\r\n", timeCount);
@@ -359,13 +508,25 @@ void startTask()
 /**
  * 去重复数据，保证里面的每个数据的唯一性
 */
-void checkVecBingoVec(vector<vector<int>> &vecBingoVec)
+void checkVec6VecUnique(vector<vector<int>> &vec6Vec)
 {
-	const vector<vector<int>> vecVec = vecBingoVec;
+#if 1
+	set<vector<int>> set6Vec(vec6Vec.begin(), vec6Vec.end());
+	if(vec6Vec.size() != set6Vec.size())
+	{
+		vector<vector<int>> tmp(set6Vec.begin(), set6Vec.end());
+		tmp.swap(vec6Vec);
+		tmp.clear();
+		vector<vector<int>>().swap(tmp);
+	}
+	set6Vec.clear();
+	set<vector<int>>().swap(set6Vec);
+#else
+	vector<vector<int>> vecVec(vec6Vec);
 	for(const auto &elemVec1:vecVec)
 	{
 		unsigned int index =  0;
-		for(vector<vector<int>>::iterator itor=vecBingoVec.begin(); itor!=vecBingoVec.end(); itor++)
+		for(vector<vector<int>>::iterator itor=vec6Vec.begin(); itor!=vec6Vec.end(); itor++)
 		{
 			if(elemVec1 == (*itor))
 			{
@@ -376,8 +537,8 @@ void checkVecBingoVec(vector<vector<int>> &vecBingoVec)
 					// {
 					// 	printf("%d|", elem);
 					// }printf("\t]\n");
-					itor = vecBingoVec.erase(itor);
-					if(itor!=vecBingoVec.begin())
+					itor = vec6Vec.erase(itor);
+					if(itor!=vec6Vec.begin())
 					{
 						itor--;
 					}
@@ -385,6 +546,9 @@ void checkVecBingoVec(vector<vector<int>> &vecBingoVec)
 			}
 		}
 	}
+	vecVec.clear();
+	vector<vector<int>>().swap(vecVec);
+#endif
 	return;
 }
 
@@ -393,7 +557,7 @@ void checkResult()
 	const char* sqlcmd = "create table if not exists tbldatas("
                             "elems text not null, result int not null default 0,"
                             "UNIQUE(elems, result));";
-	for(const auto &elemVec:gVecBingoVec)
+	for(const auto &elemVec:gbaseVec6Vec)
 	{
 		sqlite_tb *sql = nullptr;
 		int retInt = 0;
@@ -449,6 +613,9 @@ void creatVec6VecResult(const vector<vector<int>> &vec6Vec, const char* dbname)
 	if(vec6Vec.size() <= 0)
 	{
 		printf("vec6Vec.size()=0~\r\n");
+		sql->CloseDB();
+		delete sql;
+		sql = nullptr;
 		return;
 	}
 	for(const auto &elemVec6:vec6Vec)
@@ -498,7 +665,7 @@ void genVec6VecForFindBaseSqlData()
 {
 	vector<vector<int>> vec6VecAll;
 	getVec6Vec1107568(vec6VecAll);
-	findBaseSqlData(vec6VecAll);
+	findBaseSqlData3(vec6VecAll);
 	return;
 }
 
@@ -521,8 +688,8 @@ void getVec6Vec1107568(vector<vector<int>> &vec6VecAll)
 	/**
 	 * 添加自定义排序规则
 	*/
-	// sort(vec6VecAll.begin(), vec6VecAll.end(), cmp2());
-	sort(vec6VecAll.begin(), vec6VecAll.end());
+	sort(vec6VecAll.begin(), vec6VecAll.end(), cmp2());
+	// sort(vec6VecAll.begin(), vec6VecAll.end());
 	return;
 }
 
@@ -547,7 +714,7 @@ void getCoverResultDatas2()
 		return ;
 	}
 
-	for(const auto &elemVec:gVecBingoVec)
+	for(const auto &elemVec:gbaseVec6Vec)
 	{
 		MyTask2 t(elemVec, index++);//创建任务
 		mt->Push(t);//将任务推送给队列中
@@ -573,42 +740,136 @@ void getCoverResultDatas2()
 	mt = nullptr;
 }
 
+
 /**
+ * 前提是a和b里面都没有重复元素
+ * 两个vector相与
+ * a & b;
+*/
+void vectorsFindSameElems(vector<vector<int>> &a, const vector<vector<int>> &b)
+{
+#if 1
+	/**
+	 * 对于任何集合a,b 都适用
+	*/
+	set<vector<int>> setA(a.begin(), a.end());
+	set<vector<int>> setB(b.begin(), b.end());
+	set<vector<int>> setRet = set<vector<int>>();
+	set_intersection(setA.begin(), setA.end(), setB.begin(), setB.end(), \
+					insert_iterator<set<vector<int>>>(setRet,setRet.begin()));
+	vector<vector<int>> retVec(setRet.begin(), setRet.end());
+	retVec.swap(a);
+
+	setA.clear();set<vector<int>>().swap(setA);
+	setB.clear();set<vector<int>>().swap(setB);
+	setRet.clear();set<vector<int>>().swap(setRet);
+	retVec.clear();vector<vector<int>>().swap(retVec);
+#else
+	set<vector<int>> uniqueElementsSetA(a.begin(), a.end());
+	uniqueElementsSetA.insert(b.begin(), b.end());
+	vector<vector<int>> mergeVec6Vec(uniqueElementsSetA.begin(), uniqueElementsSetA.end());
+	mergeVec6Vec.swap(a);//交换两个容器的内容
+
+	uniqueElementsSetA.clear();set<vector<int>>().swap(uniqueElementsSetA);
+	mergeVec6Vec.clear();vector<vector<int>>().swap(mergeVec6Vec);
+#endif
+	return;
+}
+
+/**
+ * 前提是a和b里面都没有重复元素
  * 两个vector相加
  * a + b;
 */
-void vectorsAdd(vector<vector<int>> &a, const vector<vector<int>> &b)
+void vectorsPlus(vector<vector<int>> &a, const vector<vector<int>> &b)
 {
-	set<vector<int>> uniqueElementsSet = set<vector<int>>();
-	uniqueElementsSet.insert(a.begin(), a.end());
-	uniqueElementsSet.insert(b.begin(), b.end());
-	vector<vector<int>> mergeVec6Vec(uniqueElementsSet.begin(), uniqueElementsSet.end());
+#if 1
 	/**
-	 * 相加其实不用清空操作，内存空间肯定比之前的大
+	 * 对于任何集合a,b 都适用
 	*/
-	// vector<vector<int>>().swap(a);//清空a，并且释放了a的内存空间
-	a = mergeVec6Vec;
+	set<vector<int>> setA(a.begin(), a.end());
+	set<vector<int>> setB(b.begin(), b.end());
+	set<vector<int>> setRet = set<vector<int>>();
+	set_union(setA.begin(), setA.end(), setB.begin(), setB.end(), \
+					insert_iterator<set<vector<int>>>(setRet,setRet.begin()));
+	vector<vector<int>> retVec(setRet.begin(), setRet.end());
+	retVec.swap(a);
+
+	setA.clear();set<vector<int>>().swap(setA);
+	setB.clear();set<vector<int>>().swap(setB);
+	setRet.clear();set<vector<int>>().swap(setRet);
+	retVec.clear();vector<vector<int>>().swap(retVec);
+#else
+	set<vector<int>> uniqueElementsSetA(a.begin(), a.end());
+	uniqueElementsSetA.insert(b.begin(), b.end());
+	vector<vector<int>> mergeVec6Vec(uniqueElementsSetA.begin(), uniqueElementsSetA.end());
+	mergeVec6Vec.swap(a);//交换两个容器的内容
+
+	uniqueElementsSetA.clear();set<vector<int>>().swap(uniqueElementsSetA);
+	mergeVec6Vec.clear();vector<vector<int>>().swap(mergeVec6Vec);
+#endif
 	return;
 }
 
 /**
- * 两个vector相减：前提是b是a的子集
+ * 前提是a和b里面都没有重复元素
+ * 两个vector相减：
  * a - b;
 */
-void vectorsPlus(vector<vector<int>> &a, const vector<vector<int>> &b)
+void vectorsMinus(vector<vector<int>> &a, const vector<vector<int>> &b)
 {
-	set<vector<int>> uniqueElementsSet = set<vector<int>>();
-	uniqueElementsSet.insert(a.begin(), a.end());
-	for(const auto &elemvec:b)
-	{
-		uniqueElementsSet.erase(elemvec);
-	}
-	vector<vector<int>> mergeVec6Vec(uniqueElementsSet.begin(), uniqueElementsSet.end());
-	vector<vector<int>>().swap(a);//清空a，并且释放了a的内存空间
-	a = mergeVec6Vec;
+#if 1
+	/**
+	 * 对于任何集合a,b 都适用
+	*/
+	set<vector<int>> setA(a.begin(), a.end());
+	set<vector<int>> setB(b.begin(), b.end());
+	set<vector<int>> setRet = set<vector<int>>();
+	set_difference(setA.begin(), setA.end(), setB.begin(), setB.end(), \
+					insert_iterator<set<vector<int>>>(setRet,setRet.begin()));
+	vector<vector<int>> retVec(setRet.begin(), setRet.end());
+	retVec.swap(a);
+
+	setA.clear();set<vector<int>>().swap(setA);
+	setB.clear();set<vector<int>>().swap(setB);
+	setRet.clear();set<vector<int>>().swap(setRet);
+	retVec.clear();vector<vector<int>>().swap(retVec);
+#else
+	/**
+	 * 前提是b是a的子集
+	 * 若不是子集，则for循环一个一个删除
+	*/
+	set<vector<int>> uniqueElementsSetA(a.begin(), a.end());
+	set<vector<int>> uniqueElementsSetB(b.begin(), b.end());
+	uniqueElementsSetA.erase(uniqueElementsSetB.begin(), uniqueElementsSetB.end());
+	vector<vector<int>> mergeVec6Vec(uniqueElementsSetA.begin(), uniqueElementsSetA.end());
+	mergeVec6Vec.swap(a);//交换两个容器的内容
+
+	uniqueElementsSetA.clear();set<vector<int>>().swap(uniqueElementsSetA);
+	uniqueElementsSetB.clear();set<vector<int>>().swap(uniqueElementsSetB);
+	mergeVec6Vec.clear();vector<vector<int>>().swap(mergeVec6Vec);
+#endif
 	return;
 }
 
+
+unsigned long getSetVecAddValue(const set<vector<int>> &a, const set<vector<int>> &b)
+{
+	/**
+	 * 此方法会快一些
+	*/
+	unsigned long add = 0;
+	set<vector<int>> ret = set<vector<int>>();
+	set_difference(b.begin(), b.end(), a.begin(), a.end(), insert_iterator<set<vector<int>>>(ret,ret.begin()));
+	add = ret.size();
+	/**
+	 * 注意要释放资源，不然会内存泄漏
+	*/
+	ret.clear();
+	set<vector<int>>().swap(ret);
+
+	return add;
+}
 
 unsigned long getVecAddValue(const set<vector<int>> &a, const vector<vector<int>> &b)
 {
@@ -628,22 +889,92 @@ unsigned long getVecAddValue(const set<vector<int>> &a, const vector<vector<int>
 	 * 此方法会快一些
 	*/
 	unsigned long add = 0;
-	set<vector<int>> c = set<vector<int>>();
 	set<vector<int>> ret = set<vector<int>>();
-	c.insert(b.begin(), b.end());
+	set<vector<int>> c(b.begin(), b.end());
 	set_difference(c.begin(), c.end(), a.begin(), a.end(), insert_iterator<set<vector<int>>>(ret,ret.begin()));
 	add = ret.size();
 	/**
 	 * 注意要释放资源，不然会内存泄漏
 	*/
-	set<vector<int>>().swap(c);
 	c.clear();
-	set<vector<int>>().swap(ret);
+	set<vector<int>>().swap(c);
 	ret.clear();
+	set<vector<int>>().swap(ret);
 #endif
 	return add;
 }
 
+
+unsigned long getSetAddValue(const set<set<int>> &a, const set<set<int>> &b)
+{
+#if 0
+	unsigned long add = a.size();
+	set<set<int>> uniqueElementsSet(a);
+	uniqueElementsSet.insert(b.begin(), b.end());
+	add = uniqueElementsSet.size() - add;
+
+	/**
+	 * 注意要释放资源，不然会内存泄漏
+	*/
+	uniqueElementsSet.clear();
+	set<set<int>>().swap(uniqueElementsSet);
+#else
+	/**
+	 * 此方法会快一些
+	*/
+	unsigned long add = 0;
+	set<set<int>> ret = set<set<int>>();
+	// set<set<int>> c(b);
+	set_difference(b.begin(), b.end(), a.begin(), a.end(), insert_iterator<set<set<int>>>(ret,ret.begin()));
+	add = ret.size();
+	/**
+	 * 注意要释放资源，不然会内存泄漏
+	*/
+	// c.clear();
+	// set<set<int>>().swap(c);
+	ret.clear();
+	set<set<int>>().swap(ret);
+#endif
+	return add;
+}
+
+void getFinalVec6VecFromLargeMapSetVecDatas(vector<vector<int>> &finalVec6Vec,
+					 set<vector<int>> &uniqueElementsSet,
+					 set<vector<int>> &leftVec6Vec,
+					 const map<vector<int>, set<vector<int>>> &LargeDatas)
+{
+	vector<int> insertVec6 = vector<int>();
+
+	unsigned long addValue = 0;
+	if((uniqueElementsSet.size() <= 0) || (finalVec6Vec.size() <= 0))
+	{
+		printf("uniqueElementsSet.size() <= 0\r\n");
+		return;
+	}
+
+	for(const auto &elemVec:leftVec6Vec)
+	{
+		unsigned long value = 0;
+
+		value = getSetVecAddValue(uniqueElementsSet, LargeDatas.at(elemVec));
+		if(addValue < value)
+		{
+			insertVec6.clear();
+			vector<int>().swap(insertVec6);
+			insertVec6 = elemVec;
+			addValue = value;
+		}
+	}
+
+	uniqueElementsSet.insert(LargeDatas.at(insertVec6).begin(), LargeDatas.at(insertVec6).end());
+	finalVec6Vec.push_back(insertVec6);
+	leftVec6Vec.erase(insertVec6);
+
+	vector<int>().swap(insertVec6);
+	insertVec6.clear();
+
+	return;
+}
 
 void getFinalVec6Vec(vector<vector<int>> &finalVec6Vec,
 					 set<vector<int>> &uniqueElementsSet,
@@ -667,8 +998,8 @@ void getFinalVec6Vec(vector<vector<int>> &finalVec6Vec,
 		value = getVecAddValue(uniqueElementsSet, LargeDatas.at(elemVec));
 		if(addValue < value)
 		{
-			vector<int>().swap(insertVec6);
 			insertVec6.clear();
+			vector<int>().swap(insertVec6);
 			insertVec6 = elemVec;
 			addValue = value;
 		}
@@ -685,19 +1016,125 @@ void getFinalVec6Vec(vector<vector<int>> &finalVec6Vec,
 }
 
 
-
-void getLargeDatas(map<vector<int>, vector<vector<int>>> &LargeDatas,
-					const vector<vector<int>> &baseVec6Vec)
+void getFinalSetSet(set<set<int>> &finalSetSet,
+					 set<set<int>> &uniqueElementsSet,
+					 set<set<int>> &leftSetSet,
+					 const map<set<int>, set<set<int>>> &LargeDatas)
 {
+	set<int> insertSet6 = set<int>();
+
+	unsigned long addValue = 0;
+	if((uniqueElementsSet.size() <= 0) || (finalSetSet.size() <= 0))
+	{
+		printf("uniqueElementsSet.size() <= 0\r\n");
+		return;
+	}
+
+	for(const auto &elemSet:leftSetSet)
+	{
+		unsigned long value = 0;
+
+		value = getSetAddValue(uniqueElementsSet, LargeDatas.at(elemSet));
+		if(addValue < value)
+		{
+			insertSet6.clear();
+			set<int>().swap(insertSet6);
+			insertSet6 = elemSet;
+			addValue = value;
+		}
+	}
+
+	uniqueElementsSet.insert(LargeDatas.at(insertSet6).begin(), LargeDatas.at(insertSet6).end());
+	finalSetSet.insert(insertSet6);
+	leftSetSet.erase(insertSet6);
+
+	insertSet6.clear();
+	set<int>().swap(insertSet6);
+	return;
+}
+
+
+void getLargeSetVecDatas(map<vector<int>, set<vector<int>>> &LargeDatas, const vector<vector<int>> &baseVec6Vec)
+{
+	/**
+	 * 去脏数据
+	*/
+	if(LargeDatas.size() > 0)
+	{
+		/**
+		 * 清空脏数据
+		*/
+		LargeDatas.clear();
+		map<vector<int>, set<vector<int>>>().swap(LargeDatas);
+	}
+
+	arrange::startTime();
+	printf("-----------startTime-------------%s\r\n", __FUNCTION__);
+	for(const auto &elemVec:baseVec6Vec)
+	{
+		set<vector<int>> set6Vec = set<vector<int>>();
+		getSet6VecFromDb(elemVec, set6Vec);
+		// LargeDatas.insert(make_pair(elemVec, set6Vec));
+		LargeDatas.emplace(elemVec, set6Vec);
+		set6Vec.clear();set<vector<int>>().swap(set6Vec);
+	}
+	printf("-----------endTime-------------%ld\r\n", LargeDatas.size());
+	arrange::endTime();
+	return;
+}
+
+void getLargeVecVecDatas(map<vector<int>, vector<vector<int>>> &LargeDatas, const vector<vector<int>> &baseVec6Vec)
+{
+	/**
+	 * 去脏数据
+	*/
+	if(LargeDatas.size() > 0)
+	{
+		/**
+		 * 清空脏数据
+		*/
+		LargeDatas.clear();
+		map<vector<int>, vector<vector<int>>>().swap(LargeDatas);
+	}
+
 	arrange::startTime();
 	printf("-----------startTime-------------%s\r\n", __FUNCTION__);
 	for(const auto &elemVec:baseVec6Vec)
 	{
 		vector<vector<int>> vec6Vec = vector<vector<int>>();
 		getVec6VecFromDb(elemVec, vec6Vec);
-		LargeDatas.insert(make_pair(elemVec, vec6Vec));
-		vector<vector<int>>().swap(vec6Vec);
-		vec6Vec.clear();
+		// LargeDatas.insert(make_pair(elemVec, vec6Vec));
+		LargeDatas.emplace(elemVec, vec6Vec);
+		vec6Vec.clear();vector<vector<int>>().swap(vec6Vec);
+	}
+	printf("-----------endTime-------------%ld\r\n", LargeDatas.size());
+	arrange::endTime();
+	return;
+}
+
+void getLargeSetSetDatas(map<set<int>, set<set<int>>> &LargeDatas, const set<set<int>> &baseSet6Set)
+{
+	/**
+	 * 去脏数据
+	*/
+	if(LargeDatas.size() > 0)
+	{
+		/**
+		 * 清空脏数据
+		*/
+		LargeDatas.clear();
+		map<set<int>, set<set<int>>>().swap(LargeDatas);
+	}
+
+	arrange::startTime();
+	printf("-----------startTime-------------%s\r\n", __FUNCTION__);
+	for(const auto &elemSet:baseSet6Set)
+	{
+		set<set<int>> set6Set = set<set<int>>();
+		getSet6SetFromDb(elemSet, set6Set);
+		// LargeDatas.insert(make_pair(elemSet, set6Set));
+		LargeDatas.emplace(elemSet, set6Set);
+		set6Set.clear();set<set<int>>().swap(set6Set);
 	}
 	printf("-----------endTime-------------%ld\r\n", LargeDatas.size());
 	arrange::endTime();
@@ -705,9 +1142,130 @@ void getLargeDatas(map<vector<int>, vector<vector<int>>> &LargeDatas,
 }
 
 /**
+ * 将vector<vector<int>> 全部转化为 set<set<>>的方式
  * baseVec6Vec 传值为gVecBingoVec
 */
-void getCoverResultDatas4(const map<vector<int>, vector<vector<int>>> &LargeDatas,
+void getCoverResultDatas4(const map<set<int>, set<set<int>>> &LargeDatas,
+							const set<set<int>> &baseSetSet)
+{
+	set<set<int>> finalSetSet = set<set<int>>();
+	set<set<int>> uniqueElementsSet = set<set<int>>();
+	set<set<int>> leftSetSet(baseSetSet);
+	unsigned long baseSetSetSize = baseSetSet.size();
+
+	finalSetSet.insert(*(baseSetSet.begin()));
+	leftSetSet.erase(*(baseSetSet.begin()));
+	uniqueElementsSet.insert(LargeDatas.at(*(baseSetSet.begin())).begin(),
+							 LargeDatas.at(*(baseSetSet.begin())).end());
+
+	arrange::startTime();
+	printf("-----------startTime-------------\r\n");
+	while(finalSetSet.size() < baseSetSetSize)
+	{
+		printf("------------------------%ld\r\n", uniqueElementsSet.size());
+		getFinalSetSet(finalSetSet, uniqueElementsSet, leftSetSet, LargeDatas);
+	}
+	arrange::endTime();
+
+	set<set<int>>().swap(leftSetSet);
+	leftSetSet.clear();
+	set<set<int>>().swap(uniqueElementsSet);
+	uniqueElementsSet.clear();
+
+	// getCoverResultDatas3(LargeDatas, finalSetSet);
+	return;
+}
+
+/**
+ * set<vector<>>的混合使用的方式,添加中断，避免一旦停止运行 finalVec6Vec 就得重新开始生成~
+ * baseVec6Vec 传值为gVecBingoVec
+*/
+void getCoverResultDatas9(const map<vector<int>, set<vector<int>>> &LargeDatas, \
+							const vector<vector<int>> &baseVec6Vec, \
+							vector<vector<int>> &finalVec6Vec)
+{
+	set<vector<int>> uniqueElementsSet = set<vector<int>>();
+	set<vector<int>> leftVec6Vec = set<vector<int>>();
+	unsigned long baseVec6VecSize = baseVec6Vec.size();
+
+	leftVec6Vec.insert(baseVec6Vec.begin(), baseVec6Vec.end());//初始化leftVec6Vec set容器
+
+	if(finalVec6Vec.size() <= 0)
+	{
+		finalVec6Vec.push_back(baseVec6Vec[0]);
+		leftVec6Vec.erase(baseVec6Vec[0]);
+		uniqueElementsSet.insert(LargeDatas.at(baseVec6Vec[0]).begin(), LargeDatas.at(baseVec6Vec[0]).end());
+	}
+	else
+	{
+		for(const auto &elemVec6:finalVec6Vec)
+		{
+			leftVec6Vec.erase(elemVec6);
+			uniqueElementsSet.insert(LargeDatas.at(elemVec6).begin(), LargeDatas.at(elemVec6).end());
+		}
+	}
+
+
+	arrange::startTime();
+	printf("-----------startTime-------------\r\n");
+	while(finalVec6Vec.size() < baseVec6VecSize)
+	{
+		printf("------------%ld------------%ld\r\n", finalVec6Vec.size(), uniqueElementsSet.size());
+		getFinalVec6VecFromLargeMapSetVecDatas(finalVec6Vec, uniqueElementsSet, leftVec6Vec, LargeDatas);
+	}
+	arrange::endTime();
+
+	set<vector<int>>().swap(leftVec6Vec);
+	leftVec6Vec.clear();
+
+	set<vector<int>>().swap(uniqueElementsSet);
+	uniqueElementsSet.clear();
+
+	getCoverResultDatas8(LargeDatas, finalVec6Vec);
+	return;
+}
+
+/**
+ * set<vector<>>的混合使用的方式
+ * baseVec6Vec 传值为gVecBingoVec
+*/
+void getCoverResultDatas7(const map<vector<int>, set<vector<int>>> &LargeDatas, const vector<vector<int>> &baseVec6Vec)
+{
+	vector<vector<int>> finalVec6Vec = vector<vector<int>>();
+	set<vector<int>> uniqueElementsSet = set<vector<int>>();
+	set<vector<int>> leftVec6Vec = set<vector<int>>();
+	unsigned long baseVec6VecSize = baseVec6Vec.size();
+
+	leftVec6Vec.insert(baseVec6Vec.begin(), baseVec6Vec.end());//初始化leftVec6Vec set容器
+
+	finalVec6Vec.push_back(baseVec6Vec[0]);
+	leftVec6Vec.erase(baseVec6Vec[0]);
+	uniqueElementsSet.insert(LargeDatas.at(baseVec6Vec[0]).begin(), LargeDatas.at(baseVec6Vec[0]).end());
+
+	arrange::startTime();
+	printf("-----------startTime-------------\r\n");
+	while(finalVec6Vec.size() < baseVec6VecSize)
+	{
+		printf("------------%ld------------%ld\r\n", finalVec6Vec.size(), uniqueElementsSet.size());
+		getFinalVec6VecFromLargeMapSetVecDatas(finalVec6Vec, uniqueElementsSet, leftVec6Vec, LargeDatas);
+	}
+	arrange::endTime();
+
+	set<vector<int>>().swap(leftVec6Vec);
+	leftVec6Vec.clear();
+
+	set<vector<int>>().swap(uniqueElementsSet);
+	uniqueElementsSet.clear();
+
+	getCoverResultDatas8(LargeDatas, finalVec6Vec);
+	return;
+}
+
+/**
+ * set<vector<>>的混合使用的方式，效率值还是很慢的
+ * baseVec6Vec 传值为gVecBingoVec
+*/
+void getCoverResultDatas5(const map<vector<int>, vector<vector<int>>> &LargeDatas,
 							const vector<vector<int>> &baseVec6Vec)
 {
 	vector<vector<int>> finalVec6Vec = vector<vector<int>>();
@@ -721,13 +1279,14 @@ void getCoverResultDatas4(const map<vector<int>, vector<vector<int>>> &LargeData
 	leftVec6Vec.erase(baseVec6Vec[0]);
 	uniqueElementsSet.insert(LargeDatas.at(baseVec6Vec[0]).begin(), LargeDatas.at(baseVec6Vec[0]).end());
 
+	arrange::startTime();
+	printf("-----------startTime-------------\r\n");
 	while(finalVec6Vec.size() < baseVec6VecSize)
 	{
-		arrange::startTime();
-		printf("-----------startTime-------------%ld\r\n", uniqueElementsSet.size());
+		printf("------------------------%ld\r\n", uniqueElementsSet.size());
 		getFinalVec6Vec(finalVec6Vec, uniqueElementsSet, leftVec6Vec, LargeDatas);
-		arrange::endTime();
 	}
+	arrange::endTime();
 
 	set<vector<int>>().swap(leftVec6Vec);
 	leftVec6Vec.clear();
@@ -768,10 +1327,56 @@ void genFinalBaseVec6Vec(vector<pair<vector<int>, int>> &vec6intPairVec)
 	}
 	printf("finalVec.size=%ld\r\n", finalVec.size());
 
-	// creatVec6VecResult(finalVec , OBJECT_EXE_DIR "FinalBaseVec6Vec");//可执行文件getVecAddValue->
-	creatVec6VecResult(finalVec , OBJECT_EXE_DIR "FinalBaseVec6Vec_0201");//可执行文件FinalBaseVec6Vec_0201->
+	// creatVec6VecResult(finalVec , OBJECT_EXE_DIR "FinalBaseVec6Vec");//可执行文件 getVecAddValue->
+	// creatVec6VecResult(finalVec , OBJECT_EXE_DIR "FinalBaseVec6Vec_0201");//可执行文件 FinalBaseVec6Vec_0201->
+	// creatVec6VecResult(finalVec , OBJECT_EXE_DIR "getCoverResultDatas7");//可执行文件 getCoverResultDatas7->
+	creatVec6VecResult(finalVec , OBJECT_EXE_DIR "getCoverResultDatas9");//可执行文件 catchSigIntSaveFinalVec6VecToDbFile->
 	return;
 }
+
+/**
+ * 用set加insert的特性可去重复来实现：效率最高
+ * 得到 BASESQLDBDATA 所对应的所有数据块的覆盖率：
+*/
+void getCoverResultDatas8(const map<vector<int>, set<vector<int>>> &LargeDatas, const vector<vector<int>> &baseVec6Vec)
+{
+	unsigned int index = 0;
+	unsigned long addValue = 0;
+	set<vector<int>> uniqueElementsSet = set<vector<int>>();
+	vector<pair<vector<int>, int>> vec6intPairVec = vector<pair<vector<int>, int>>();
+
+	printf("baseVec6Vec.size = %ld\r\n", baseVec6Vec.size());
+	for(const auto &gElemVec : baseVec6Vec)
+	{
+		index++;
+		// arrange::startTime();
+		// printf("-----------startTime----%d---------%ld\r\n", index, uniqueElementsSet.size());
+		addValue = uniqueElementsSet.size();
+		uniqueElementsSet.insert(LargeDatas.at(gElemVec).begin(), LargeDatas.at(gElemVec).end());
+		addValue = uniqueElementsSet.size() - addValue;
+		vec6intPairVec.push_back(make_pair(gElemVec, addValue));
+		printf("-----------%s----%d---------%ld\r\n",__FUNCTION__ , index, addValue);
+		// arrange::endTime();
+		if(uniqueElementsSet.size() == 1107568)
+		{
+			break;
+		}
+	}
+	/**
+	 * 已去重复后生成的总的集合mergeVec6Vec
+	*/
+	printf("total uniqueElementsSet.size=%ld\r\n", uniqueElementsSet.size());
+
+	set<vector<int>>().swap(uniqueElementsSet);
+	uniqueElementsSet.clear();
+
+	genFinalBaseVec6Vec(vec6intPairVec);
+
+	vector<pair<vector<int>, int>>().swap(vec6intPairVec);
+	vec6intPairVec.clear();
+	return;
+}
+
 
 /**
  * 用set加insert的特性可去重复来实现：效率最高
@@ -805,8 +1410,7 @@ void getCoverResultDatas3(const map<vector<int>, vector<vector<int>>> &LargeData
 	/**
 	 * 已去重复后生成的总的集合mergeVec6Vec
 	*/
-	vector<vector<int>> mergeVec6Vec(uniqueElementsSet.begin(), uniqueElementsSet.end());
-	printf("mergeVec6Vec.size=%ld\r\n", mergeVec6Vec.size());
+	printf("total uniqueElementsSet.size=%ld\r\n", uniqueElementsSet.size());
 
 	set<vector<int>>().swap(uniqueElementsSet);
 	uniqueElementsSet.clear();
@@ -833,8 +1437,8 @@ void getCoverResultDatas()
 	unsigned int index = 0;
 
 	getVec6Vec1107568(vec6VecAll);
-	printf("gVecBingoVec.size = %ld\r\n", gVecBingoVec.size());
-	for(const auto &gElemVec : gVecBingoVec)
+	printf("gbaseVec6Vec.size = %ld\r\n", gbaseVec6Vec.size());
+	for(const auto &gElemVec : gbaseVec6Vec)
 	{
 		vector<vector<int>> vec6Vec;
 		unsigned long dataInVec6VecAllSize = 0;
@@ -884,19 +1488,36 @@ void getCoverResultDatas()
 /**
  * 查找两个数据块的交集的数目
 */
-void findTheSameAmountWithComparedVec6Vecs(/*const vector<int> &vec6A,const vector<int> &vec6B*/)
+void findTheSameAmountWithComparedSet6Set()
 {
-	const vector<int> vec6A{4,6,7,10,13,25};
-	const vector<int> vec6B{4,9,12,17,30,32};
+	set<int> set6A = {4,6,7,10,13,25};
+	set<int> set6B = {4,9,12,17,30,32};
 	unsigned int ret = 0;
-	vector<vector<int>> vec6VecA;
-	vector<vector<int>> vec6VecB;
-	getVec6VecFromDb(vec6A, vec6VecA);
-	getVec6VecFromDb(vec6B, vec6VecB);
-	ret = getTheSameAmountFromVec6Vecs(vec6VecA, vec6VecB);
+	set<set<int>> retSetSet = set<set<int>>();
+	set<set<int>> set6SetA = set<set<int>>();
+	set<set<int>> set6SetB = set<set<int>>();
+	getSet6SetFromDb(set6A, set6SetA);
+	getSet6SetFromDb(set6B, set6SetB);
+	set_intersection(set6SetA.begin(), set6SetA.end(),
+				 	 set6SetB.begin(), set6SetB.end(),
+					 insert_iterator<set<set<int>>>(retSetSet, retSetSet.begin()));
+	ret = retSetSet.size();
+
+	/**
+	 * 回收内存空间，释放资源
+	*/
+	set6A.clear();set<int>().swap(set6A);
+	set6B.clear();set<int>().swap(set6B);
+	set6SetA.clear();set<set<int>>().swap(set6SetA);
+	set6SetB.clear();set<set<int>>().swap(set6SetB);
+	retSetSet.clear();set<set<int>>().swap(retSetSet);
+
 	printf("the same amount is %d\r\n", ret);
 }
 
+/**
+ * 最笨的方法，vector查找交集，重复是效率最低的，应该用set容器
+*/
 unsigned int getTheSameAmountFromVec6Vecs(const vector<vector<int>> &vec6VecA, const vector<vector<int>> &vec6VecB)
 {
 	unsigned int sameAmount = 0;
@@ -911,6 +1532,27 @@ unsigned int getTheSameAmountFromVec6Vecs(const vector<vector<int>> &vec6VecA, c
 		}
 	}
 	return sameAmount;
+}
+
+void getSet6SetFromDb(const set<int> &set6, set<set<int>> &set6Set)
+{
+	sqlite_tb *sql = nullptr;
+	string sqlDbFile = SAVE6RET_DB_FILEDIR;
+	string dataStr = "";
+
+	for(const auto &elem : set6)
+	{
+		dataStr += arrange::NumberToString<int>(elem) + "_";
+	}
+	// printf("[\t %s \t]\r\n", dataStr.c_str());
+	sqlDbFile += dataStr;
+	sql = new sqlite_tb(sqlDbFile.c_str());
+	sql->OpenDB();
+	sql->SelectAllData(set6Set);
+	sql->CloseDB();
+	delete sql;
+	sql = nullptr;
+	return;
 }
 
 void getVec6VecFromDb(const vector<int> &vec6, vector<vector<int>> &vec6Vec)
@@ -928,6 +1570,27 @@ void getVec6VecFromDb(const vector<int> &vec6, vector<vector<int>> &vec6Vec)
 	sql = new sqlite_tb(sqlDbFile.c_str());
 	sql->OpenDB();
 	sql->SelectAllData(vec6Vec);
+	sql->CloseDB();
+	delete sql;
+	sql = nullptr;
+	return;
+}
+
+void getSet6VecFromDb(const vector<int> &vec6, set<vector<int>> &set6Vec)
+{
+	sqlite_tb *sql = nullptr;
+	string sqlDbFile = SAVE6RET_DB_FILEDIR;
+	string dataStr = "";
+
+	for(const auto &elem : vec6)
+	{
+		dataStr += arrange::NumberToString<int>(elem) + "_";
+	}
+	// printf("[\t %s \t]\r\n", dataStr.c_str());
+	sqlDbFile += dataStr;
+	sql = new sqlite_tb(sqlDbFile.c_str());
+	sql->OpenDB();
+	sql->SelectAllDataStoreSetVec(set6Vec);
 	sql->CloseDB();
 	delete sql;
 	sql = nullptr;
@@ -1044,24 +1707,74 @@ void createBaseSqlDb_1107568()
 	return;
 }
 
+
 /**
- * createBaseSqlDb->生成gVecBingoVec；
+ * vecVec  和  setSet 是一一对应的，只是存储方式不一样而已，
+ * vec是数组类型的容器，
+ * set是关联性容器，关联链表，红黑树方式存储，查找，删除，定位都是用的二叉树查找，所以效率很高
+ * setSet必须是一个空容器；
 */
-void createBaseSqlDb()
+void convertVecVec2SetSet(const vector<vector<int>> &vecVec, set<set<int>> &setSet)
+{
+	if(setSet.size() > 0)
+	{//若不为空，则清空之前的数据，避免内存泄漏，或者得到额setSet里面会有脏数据~
+		setSet.clear();
+		set<set<int>>().swap(setSet);
+	}
+
+	for(const auto &elemVec:vecVec)
+	{
+		set<int> tmp(elemVec.begin(), elemVec.end());
+		setSet.insert(tmp);
+		tmp.clear();
+		set<int>().swap(tmp);
+	}
+	return;
+}
+
+
+void convertSetSet2VecVec(const set<set<int>> &setSet, vector<vector<int>> &vecVec)
+{
+	if(vecVec.size() > 0)
+	{//若不为空，则清空之前的数据，避免内存泄漏，或者得到额vecVec里面会有脏数据~
+		vecVec.clear();
+		vector<vector<int>>().swap(vecVec);
+	}
+
+	for(const auto &elemSet:setSet)
+	{
+		vector<int> tmp(elemSet.begin(), elemSet.end());
+		vecVec.push_back(tmp);
+		tmp.clear();
+		vector<int>().swap(tmp);
+	}
+	return;
+}
+
+
+/**
+ * ->生成 gbaseVec6Vec
+ * ->生成 gFinalVec6Vec
+*/
+void createVec6vecFromSqlDb(vector<vector<int>> &vec6Vec, const char* sqldbfile)
 {
 	sqlite_tb *sql = nullptr;
-	sql = new sqlite_tb(BASESQLDBDATA);
-
+	sql = new sqlite_tb(sqldbfile);
 	if(nullptr == sql)
 	{
-		printf("sql is nullptr.\r\n");
+		printf("sql db is nullptr.\r\n");
 		return;
 	}
-	gVecBingoVec.clear();
+
     // 打开数据库，不存在，创建数据库db
 	sql->OpenDB();
 
-	sql->SelectAllData(gVecBingoVec);
+	if(vec6Vec.size() > 0)
+    {//清空容器，避免有脏数据
+        vec6Vec.clear();
+        vector<vector<int>>().swap(vec6Vec);
+    }
+	sql->SelectAllData(vec6Vec);
 
 	sql->CloseDB();
 	delete sql;
@@ -1069,11 +1782,12 @@ void createBaseSqlDb()
 	/**
 	 * 去重复操作~
 	*/
-	checkVecBingoVec(gVecBingoVec);
+	checkVec6VecUnique(vec6Vec);
 	/**
 	 * 重新按cmp2规则排序~
 	*/
-	// sort(gVecBingoVec.begin(), gVecBingoVec.end(), cmp2());
+	// sort(vec6Vec.begin(), vec6Vec.end(), cmp2());
+	printf("vec6Vec.size=%ld\r\n", vec6Vec.size());
 	return;
 }
 
@@ -1418,113 +2132,89 @@ void findBaseSqlData2(const vector<vector<int>> &vecBingoVec)
 	return;
 }
 
+/**
+ * 转化成set容器取查找和删除和插入动作都是效率最高的
+*/
 void findBaseSqlData3(const vector<vector<int>> &vecBingoVec)
 {
-	vector<vector<int>> vecBingoVecRet = vecBingoVec;//直接赋值效率更快
-
-	printf("%s--%d--Start~--vecBingoVecRet.size=%ld\r\n",__func__, __LINE__, vecBingoVecRet.size());
-	unsigned long index_j = 0;
-	int delSame = 0;
-	int delDiff = 0;
-	for(const auto &elemVec1 : vecBingoVec)
+	vector<vector<int>> vecBaseRetVec = vector<vector<int>>();
+	set<set<int>> setBaseSet = set<set<int>>();
+	set<set<int>> setBaseSetConst = set<set<int>>();
+	for(const auto &elemVec : vecBingoVec)
 	{
-		index_j++;
-		// printf("%s--%d--%d--%ld---%ld\r\n",__func__, __LINE__, index_j, vecBingoVec.size(), vecBingoVecRet.size());
-		unsigned int index_i = 0;
-		bool isIn = false;
+		set<int> tmp(elemVec.begin(), elemVec.end());
+		setBaseSet.insert(tmp);
+		tmp.clear();
+		set<int>().swap(tmp);
+	}
+	printf("%s--%d--Start~--setBaseSet.size=%ld\r\n",__func__, __LINE__, setBaseSet.size());
 
-	#if(WAY == 0)
-		isIn = checkELemIsInVec<vector<int>>(elemVec1, vecBingoVecRet);
-	#else
-		// isIn = binarySearchElemVecIsInVecVec2(elemVec1, vecBingoVecRet);	////childBingoFinal_9 高效且占内存少~
-		isIn = findElemIsInVec<vector<int>>(elemVec1, vecBingoVecRet);
-	#endif
+	setBaseSetConst.insert(setBaseSet.begin(), setBaseSet.end());
 
-		printf("131313131313-index_j=%ld---isIn=%d\r\n", index_j, isIn);
-		if(!isIn)
-		{
+	for(const auto &elemSetConst : setBaseSetConst)
+	{
+		if(setBaseSet.find(elemSetConst) == setBaseSet.end())
+		{//未找到，不存在
 			continue;
 		}
 
-		/**
-		 * 这种方法效率更快~
-		*/
-		for(vector<vector<int>>::iterator itor=vecBingoVecRet.begin(); itor!=vecBingoVecRet.end(); itor++)
-		{
-			int i = 0;
-			for(const auto &elem2 : (*itor))
-			{
-			#if(WAY == 0)
-				if(checkELemIsInVec<int>(elem2, elemVec1))//
-			#else
-				if(findElemIsInVec<int>(elem2, elemVec1))//
-			#endif
-				{
-					i++;
-				}
-			}
+		set<int> b(elemSetConst);
+		set<set<int>> setDeleteSet = set<set<int>>();
 
-			if(i==6)
+		for(const auto &elemSet : setBaseSet)
+		{
+			if(elemSet != elemSetConst)
 			{
-				index_i++;
-				if(index_i>1)//只保留有且只有一份数据；每条数据的唯一性；
+				set<int> a(elemSet);
+				set<int> tmp = set<int>();
+
+				/**
+				 * 取两个容器的相同的元素的，装入到tmp容器里面；
+				*/
+				set_intersection(a.begin(), a.end(), b.begin(), b.end(),
+									insert_iterator<set<int>>(tmp, tmp.begin()));
+				// printf("tmp.size=%ld\r\n", tmp.size());
+				if(tmp.size() >= 3)//被删除的判断条件~相同的数字数量的判断条件
 				{
-					delSame++;
-					itor = vecBingoVecRet.erase(itor);
-					/**
-					 * 本来erase操作就是删除目标迭代器的元素，目标迭代器的后面的元素都往前移动一位，
-					 * 且返回指向目标迭代器的下一个元素的迭代器
-					 * 此处需注意在操作erase是，返回的迭代器需要执行自减(itor--,而不是直接break)（且需判断是否是begin），来中和for循环里面的自加，
-					 * 不然会出现段错误或者有漏球~！！！
-					*/
-					if(itor!=vecBingoVecRet.begin())
-						itor--;
-					/**
-					 * 谨防用下列语句来执行，有漏球~
-					*/
-					// if(itor==vecBingoVecRet.end())
-					// 		break;
+					setDeleteSet.insert(elemSet);
 				}
-			}
-			else if(i>=4 && i<6)
-			{
-				// if(i == 2)
-				// {
-				// 	printf("[\t");
-				// 	for(const auto elem:elemVec1)
-				// 	{
-				// 		printf("%d_", elem);
-				// 	}printf("\t|\t");
-				// 	for(const auto elem:(*itor))
-				// 	{
-				// 		printf("%d_", elem);
-				// 	}printf("\t]\n");
-				// }
-				delDiff++;
-				itor = vecBingoVecRet.erase(itor);
-				/**
-				 * 本来erase操作就是删除目标迭代器的元素，目标迭代器的后面的元素都往前移动一位，
-				 * 且返回指向目标迭代器的下一个元素的迭代器
-				 * 此处需注意在操作erase是，返回的迭代器需要执行自减（且需判断是否是begin），来中和for循环里面的自加，
-				 * 不然会出现段错误或者有漏球~！！！
-				*/
-				if(itor!=vecBingoVecRet.begin())
-					itor--;
-				/**
-				 * 谨防用下列语句来执行，有漏球~
-				*/
-				// if(itor==vecBingoVecRet.end())
-				// 		break;
+
+				tmp.clear();
+				set<int>().swap(tmp);
+				a.clear();
+				set<int>().swap(a);
 			}
 		}
-		// printf("delSame=%d, delDiff=%d\r\n", delSame, delDiff);
+
+		for(auto &delElemSet : setDeleteSet)
+		{
+			setBaseSet.erase(delElemSet);
+		}
+		b.clear();
+		set<int>().swap(b);
+		setDeleteSet.clear();
+		set<set<int>>().swap(setDeleteSet);
+		printf("setBaseSet.size=%ld\r\n", setBaseSet.size());
 	}
-	printf("delSame=%d, delDiff=%d\r\n", delSame, delDiff);
-	printf("vecBingoVecRet.size=%ld\r\n", vecBingoVecRet.size());
+
+	for(const auto &elemSet : setBaseSet)
+	{
+		vector<int> tmp(elemSet.begin(), elemSet.end());
+		vecBaseRetVec.push_back(tmp);
+		tmp.clear();
+		vector<int>().swap(tmp);
+	}
+
+	setBaseSet.clear();
+	set<set<int>>().swap(setBaseSet);
+	setBaseSetConst.clear();
+	set<set<int>>().swap(setBaseSetConst);
+
+	printf("vecBaseRetVec.size=%ld\r\n", vecBaseRetVec.size());
 	/**
 	 * 这里生成的就是 BASESQLDBDATA  所用到的文件
 	*/
-	creatVec6VecResult(vecBingoVecRet, BASESQLDBDATA "_13");
+	creatVec6VecResult(vecBaseRetVec, BASESQLDBDATA "_0620");
 	printf("%s--%d--End~\r\n",__func__, __LINE__);
 	return;
 }

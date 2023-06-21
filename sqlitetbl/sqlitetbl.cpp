@@ -413,7 +413,137 @@ bool sqlite_tb::SelectRepeatData()
 	return true;
 }
 
-//查找所有数据
+/**
+ * 查找所有数据
+ * 得到的存储在set容器中
+ * 首先确保resSetSet是个空容器
+*/
+bool sqlite_tb::SelectAllData(set<set<int>> &resSetSet)
+{
+    char *zerrMsg = NULL;
+	int nrow = 0, ncolumn = 0;
+	char** db_result = NULL;
+    // const char* sqlcmd = "select * from tbldatas;";
+    const char* sqlcmd = "select red1,red2,red3,red4,red5,red6 from tbldatas;";
+
+	int ret = sqlite3_get_table(mDb, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
+	if (ret != SQLITE_OK)
+	{
+        const char *errMsg = NULL;
+        printf("select error: %s\n", zerrMsg);
+        sqlite3_free(zerrMsg);
+        zerrMsg = NULL;
+        errMsg = sqlite3_errmsg(mDb);
+        printf("select error:%s\r\n", errMsg);
+		sqlite3_close(mDb);
+		return false;
+	}
+
+    if(resSetSet.size() > 0)
+    {//清空容器，避免有脏数据
+        resSetSet.clear();
+        set<set<int>>().swap(resSetSet);
+    }
+
+    // printf("[%s]--nrow = %d\r\n",__FUNCTION__, nrow);
+    int i = 0, j = 0;
+	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
+	{
+        set<int> data = set<int>();
+        bool isInsert = true;
+		for (j = 0; j < ncolumn; j++)
+		{
+            int result = stringToNumber<int>(db_result[i + j]);
+            if(0 == result)
+            {
+                isInsert = false;
+                break;
+            }
+            data.insert(result);
+			// printf("%s\t", db_result[i + j]);
+            // printf("%d\t", result);
+		}
+        if(false != isInsert)
+        {
+            resSetSet.insert(data);
+        }
+        data.clear();
+        set<int>().swap(data);
+		// printf("\r\n");
+	}
+    sqlite3_free_table(db_result);
+    // printf("resSetSet.size = %ld\r\n", resSetSet.size());
+
+    db_result = NULL;
+	return true;
+}
+
+/**
+ *  查找所有数据
+ * 得到的存储在set<vector< >>中
+*/
+bool sqlite_tb::SelectAllDataStoreSetVec(set<vector<int>> &resVec)
+{
+    char *zerrMsg = NULL;
+	int nrow = 0, ncolumn = 0;
+	char** db_result = NULL;
+    // const char* sqlcmd = "select * from tbldatas;";
+    const char* sqlcmd = "select red1,red2,red3,red4,red5,red6 from tbldatas;";
+
+	int ret = sqlite3_get_table(mDb, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
+	if (ret != SQLITE_OK)
+	{
+        const char *errMsg = NULL;
+        printf("select error: %s\n", zerrMsg);
+        sqlite3_free(zerrMsg);
+        zerrMsg = NULL;
+        errMsg = sqlite3_errmsg(mDb);
+        printf("select error:%s\r\n", errMsg);
+		sqlite3_close(mDb);
+		return false;
+	}
+
+    if(resVec.size() > 0)
+    {//清空容器，避免有脏数据
+        resVec.clear();
+        set<vector<int>>().swap(resVec);
+    }
+
+    // printf("[%s]--nrow = %d\r\n",__FUNCTION__, nrow);
+    int i = 0, j = 0;
+	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
+	{
+        vector<int> data;
+        bool isInsert = true;
+		for (j = 0; j < ncolumn; j++)
+		{
+            int result = stringToNumber<int>(db_result[i + j]);
+            if(0 == result)
+            {
+                isInsert = false;
+                break;
+            }
+            data.push_back(result);
+			// printf("%s\t", db_result[i + j]);
+            // printf("%d\t", result);
+		}
+        if(false != isInsert)
+        {
+            resVec.insert(data);
+        }
+		// printf("\r\n");
+	}
+    sqlite3_free_table(db_result);
+    // printf("resVec.size = %ld\r\n", resVec.size());
+
+    db_result = NULL;
+	return true;
+}
+
+/**
+ *  查找所有数据
+ * 得到的存储在vector中
+*/
 bool sqlite_tb::SelectAllData(vector<vector<int>> &resVec)
 {
     char *zerrMsg = NULL;
@@ -434,6 +564,12 @@ bool sqlite_tb::SelectAllData(vector<vector<int>> &resVec)
 		sqlite3_close(mDb);
 		return false;
 	}
+
+    if(resVec.size() > 0)
+    {//清空容器，避免有脏数据
+        resVec.clear();
+        vector<vector<int>>().swap(resVec);
+    }
 
     // printf("[%s]--nrow = %d\r\n",__FUNCTION__, nrow);
     int i = 0, j = 0;

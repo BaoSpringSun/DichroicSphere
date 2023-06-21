@@ -35,6 +35,12 @@ using namespace std;
 */
 #define     BASESQLDBDATA               OBJECT_EXE_DIR "baseSqliteDbData"
 
+
+/**
+ *
+*/
+#define     FINALVEC6VEC_DB             OBJECT_EXE_DIR "catchSigIntSaveFinalVec6VecToDbFile"
+
 /**
  * 截止期数所对应生成的db文件~
 */
@@ -89,6 +95,8 @@ public:
     void  GenBlueCondition(const vector<int> &vec, string &cond);
     bool  SelectUniqueData();
     bool  SelectAllData(vector<vector<int>> &resVec);
+    bool  SelectAllData(set<set<int>> &resSetSet);
+    bool  SelectAllDataStoreSetVec(set<vector<int>> &resVec);
     bool  SelectRepeatData();
     bool  SelectGetTotalRows();
     bool  SelectUniqueDataAmount();

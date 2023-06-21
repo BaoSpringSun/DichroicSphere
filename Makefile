@@ -35,7 +35,7 @@ LIBS += -L/usr/local/lib -ljsoncpp
 #以下是指定目标文件 所有当.c文件变成.o文件
 OBJS = $(SRCS:.cpp=.o)
 #以下是生成可执行文件 VER:childBingoFinal_13
-EXECUTABLE = testGetCoverResultDatas2
+EXECUTABLE = getCoverResultDatas7
 
 .PHONY:all clean
 
