@@ -12,6 +12,9 @@ CFLAGS += -I./task2/
 CFLAGS += -I./threadpool/
 CFLAGS += -I./observer/
 CFLAGS += -I./zmq/
+CFLAGS += -I./pailie5/
+CFLAGS += -I./pailie3/
+CFLAGS += -I./shuangseqiu/
 
 #以下是源文件
 SRCS = main.cpp#多个不同文件的话后面可以加空格继续添加
@@ -27,6 +30,9 @@ SRCS += ./observer/observer.cpp
 SRCS += ./observer/subserver.cpp
 SRCS += ./observer/testMain.cpp
 SRCS += ./zmq/zmq.cpp
+SRCS += ./pailie5/pailie5.cpp
+SRCS += ./pailie3/pailie3.cpp
+SRCS += ./shuangseqiu/shuangseqiu.cpp
 
 #以下是指定需要的库文件
 LIBS := -L/lib -lsqlite3 #多个不同文件路径下的文件的话后面可以加空格继续添加
@@ -35,7 +41,7 @@ LIBS += -L/usr/local/lib -ljsoncpp
 #以下是指定目标文件 所有当.c文件变成.o文件
 OBJS = $(SRCS:.cpp=.o)
 #以下是生成可执行文件 VER:childBingoFinal_13
-EXECUTABLE = getCoverResultDatas7
+EXECUTABLE = sample_pailie3_main
 
 .PHONY:all clean
 

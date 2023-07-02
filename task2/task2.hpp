@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <mutex>
+#include <map>
 #include "sqlitetbl.hpp"
 using namespace std;
 
@@ -17,18 +18,20 @@ public:
 private:
     bool init();
     bool getVec6VecFromDb();
+    bool initVec6VecObjDb();
+    void insertDatas();
+    void updateMapVec6TotalRet();
 
 private:
+    sqlite_tb* mVec6VecObjDb;
     vector<int> mVec6;
-    vector<vector<int>> mVec6Vec;
-    unsigned int mOperaIndex;
+    vector<vector<int>> mVec6Vec;   //-> 每个数据块的集合
+    map<vector<int>, int>  mMapVec6Ret;
+    unsigned int mOperateIndex;
+    unsigned int mTotalMapSecond;
 
 public:
     static std::mutex mLock;//互斥锁
-    static vector<vector<int>> mVec6VecAll;
-    static vector<vector<int>> mVec6VecUseFull;
-	static vector<vector<int>> mVec6VecUseLess;
+    static multiset<vector<int>> mVec6VecAll;
+    static map<vector<int>, int> mMapVec6TotalRet;
 };
-
-
-

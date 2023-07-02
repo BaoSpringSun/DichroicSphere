@@ -30,6 +30,14 @@ public:
                             vector<int> resVec,
                             int start, int index, int remain,
                             vector<vector<int>> &resVecVec, const vector<int> &constVec);
+    static void recursion( const vector<int> &oriVec,
+                            vector<int> resVec,
+                            int start, int index, int remain,
+                            set<vector<int>> &resVecVec);
+    static void recursion( const vector<int> &oriVec,
+                            vector<int> resVec,
+                            int start, int index, int remain,
+                            vector<vector<int>> &resVecVec);
 
     /**
      * 或者用string中的to_string接口可以将int转化为string；

@@ -95,13 +95,13 @@ bool sqlite_tb::CreateTable(const char* sqlcmd)
 	return true;
 }
 
-bool sqlite_tb::InsertData()
+bool sqlite_tb::InsertDataFromSourceFile(const char *sourceFile)
 {
     unsigned int k = 0;
     FILE* pfile = NULL;
     char buf[128] = {0};
     string datas = "";
-    pfile = fopen(SOURCE_FILE, "r");
+    pfile = fopen(sourceFile, "r");
     if(NULL == pfile)
     {
         printf("fopen error\n");
@@ -415,18 +415,109 @@ bool sqlite_tb::SelectRepeatData()
 
 /**
  * 查找所有数据
- * 得到的存储在set容器中
- * 首先确保resSetSet是个空容器
+ * 得到的存储在setVec容器中
+ * 首先确保 resSetVec 是个空容器
 */
-bool sqlite_tb::SelectAllData(set<set<int>> &resSetSet)
+bool sqlite_tb::SelectAllData(set<vector<int>> &resSetVec, unsigned int vecElemsNum)
 {
     char *zerrMsg = NULL;
 	int nrow = 0, ncolumn = 0;
 	char** db_result = NULL;
-    // const char* sqlcmd = "select * from tbldatas;";
-    const char* sqlcmd = "select red1,red2,red3,red4,red5,red6 from tbldatas;";
+    string sqlcmd = "";
 
-	int ret = sqlite3_get_table(mDb, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
+    if(vecElemsNum == 6)
+    {
+        sqlcmd = "select red1,red2,red3,red4,red5,red6 from tbldatas;";
+    }
+    else if(vecElemsNum == 10)
+    {
+        sqlcmd = "select * from tbldatas;";
+    }
+    else
+    {
+        printf("the input paras vecElemsNum is wrong:%d\r\n", vecElemsNum);
+        return false;
+    }
+
+	int ret = sqlite3_get_table(mDb, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
+	if (ret != SQLITE_OK)
+	{
+        const char *errMsg = NULL;
+        printf("select error: %s\n", zerrMsg);
+        sqlite3_free(zerrMsg);
+        zerrMsg = NULL;
+        errMsg = sqlite3_errmsg(mDb);
+        printf("select error:%s\r\n", errMsg);
+		sqlite3_close(mDb);
+		return false;
+	}
+
+    if(resSetVec.size() > 0)
+    {//清空容器，避免有脏数据
+        resSetVec.clear();
+        set<vector<int>>().swap(resSetVec);
+    }
+
+    // printf("[%s]--nrow = %d\r\n",__FUNCTION__, nrow);
+    int i = 0, j = 0;
+	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
+	{
+        vector<int> data = vector<int>();
+        bool isInsert = true;
+		for (j = 0; j < ncolumn; j++)
+		{
+            int result = stringToNumber<int>(db_result[i + j]);
+            if(0 == result)
+            {
+                isInsert = false;
+                break;
+            }
+            data.push_back(result);
+			// printf("%s\t", db_result[i + j]);
+            // printf("%d\t", result);
+		}
+        if(false != isInsert)
+        {
+            resSetVec.insert(data);
+        }
+        data.clear();
+        vector<int>().swap(data);
+		// printf("\r\n");
+	}
+    sqlite3_free_table(db_result);
+    // printf("vector.size = %ld\r\n", vector.size());
+
+    db_result = NULL;
+	return true;
+}
+
+/**
+ * 查找所有数据
+ * 得到的存储在set容器中
+ * 首先确保resSetSet是个空容器
+*/
+bool sqlite_tb::SelectAllData(set<set<int>> &resSetSet, unsigned int vecElemsNum)
+{
+    char *zerrMsg = NULL;
+	int nrow = 0, ncolumn = 0;
+	char** db_result = NULL;
+    string sqlcmd = "";
+
+    if(vecElemsNum == 6)
+    {
+        sqlcmd = "select red1,red2,red3,red4,red5,red6 from tbldatas;";
+    }
+    else if(vecElemsNum == 10)
+    {
+        sqlcmd = "select * from tbldatas;";
+    }
+    else
+    {
+        printf("the input paras vecElemsNum is wrong:%d\r\n", vecElemsNum);
+        return false;
+    }
+
+	int ret = sqlite3_get_table(mDb, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
         const char *errMsg = NULL;
@@ -544,15 +635,104 @@ bool sqlite_tb::SelectAllDataStoreSetVec(set<vector<int>> &resVec)
  *  查找所有数据
  * 得到的存储在vector中
 */
-bool sqlite_tb::SelectAllData(vector<vector<int>> &resVec)
+bool sqlite_tb::SelectDataByDate(const string &dateStart, const string &dateEnd,
+                                 vector<vector<int>> &resVec, unsigned int vecElemsNum)
 {
     char *zerrMsg = NULL;
 	int nrow = 0, ncolumn = 0;
 	char** db_result = NULL;
-    // const char* sqlcmd = "select * from tbldatas;";
-    const char* sqlcmd = "select red1,red2,red3,red4,red5,red6 from tbldatas;";
+    string sqlcmd = "";
+    if(vecElemsNum == 6)
+    {
+        sqlcmd = "select red1,red2,red3,red4,red5,red6 from tbldatas";
+    }
+    else if((vecElemsNum == 10)||(vecElemsNum == 2)||(vecElemsNum == 3))
+    {
+        sqlcmd = "select * from tbldatas";
+    }
+    else
+    {
+        printf("the input paras vecElemsNum is wrong:%d\r\n", vecElemsNum);
+        return false;
+    }
 
-	int ret = sqlite3_get_table(mDb, sqlcmd, &db_result, &nrow, &ncolumn, &zerrMsg);
+    sqlcmd = sqlcmd + " where (date >= " + dateStart + " and date <= " + dateEnd + ");";
+
+	int ret = sqlite3_get_table(mDb, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
+	if (ret != SQLITE_OK)
+	{
+        const char *errMsg = NULL;
+        printf("select error: %s\n", zerrMsg);
+        sqlite3_free(zerrMsg);
+        zerrMsg = NULL;
+        errMsg = sqlite3_errmsg(mDb);
+        printf("select error:%s\r\n", errMsg);
+		sqlite3_close(mDb);
+		return false;
+	}
+
+    if(resVec.size() > 0)
+    {//清空容器，避免有脏数据
+        resVec.clear();
+        vector<vector<int>>().swap(resVec);
+    }
+
+    // printf("[%s]--nrow = %d\r\n",__FUNCTION__, nrow);
+    int i = 0, j = 0;
+	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
+	{
+        vector<int> data;
+        bool isInsert = true;
+		for (j = 0; j < ncolumn; j++)
+		{
+            int result = stringToNumber<int>(db_result[i + j]);
+            if(0 == result)
+            {
+                isInsert = false;
+                break;
+            }
+            data.push_back(result);
+			// printf("%s\t", db_result[i + j]);
+            // printf("%d\t", result);
+		}
+        if(false != isInsert)
+        {
+            resVec.push_back(data);
+        }
+		// printf("\r\n");
+	}
+    sqlite3_free_table(db_result);
+    // printf("resVec.size = %ld\r\n", resVec.size());
+
+    db_result = NULL;
+	return true;
+}
+
+/**
+ *  查找所有数据
+ * 得到的存储在vector中
+*/
+bool sqlite_tb::SelectAllData(vector<vector<int>> &resVec, unsigned int vecElemsNum)
+{
+    char *zerrMsg = NULL;
+	int nrow = 0, ncolumn = 0;
+	char** db_result = NULL;
+    string sqlcmd = "";
+    if(vecElemsNum == 6)
+    {
+        sqlcmd = "select red1,red2,red3,red4,red5,red6 from tbldatas;";
+    }
+    else if((vecElemsNum == 10)||(vecElemsNum == 2))
+    {
+        sqlcmd = "select * from tbldatas;";
+    }
+    else
+    {
+        printf("the input paras vecElemsNum is wrong:%d\r\n", vecElemsNum);
+        return false;
+    }
+
+	int ret = sqlite3_get_table(mDb, sqlcmd.c_str(), &db_result, &nrow, &ncolumn, &zerrMsg);
 	if (ret != SQLITE_OK)
 	{
         const char *errMsg = NULL;
@@ -633,7 +813,7 @@ bool sqlite_tb::SelectGetTotalRows()
             long result = stringToNumber<long>(db_result[i + j]);
             if(result)
             {
-                printf("db size is %ld\r\n", result);
+                // printf("db size is %ld\r\n", result);
             }
 		}
 		// printf("\r\n");

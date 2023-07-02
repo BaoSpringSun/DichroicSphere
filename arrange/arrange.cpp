@@ -303,7 +303,11 @@ void arrange::recursion( const vector<int> &oriVec,
         //合并两个容器；
         result.insert(result.end(), resVec.begin(), resVec.end());
         result.insert(result.end(), constVec.begin(), constVec.end());
-        std::sort(result.begin(), result.end());//重新排序；!!
+        /**
+         * 选用vector是因为vector的insert操作比较高效，但是sort比较耗时
+         * 为了提升递归循环的效率，重新排序可以放到外面，因为sort操作比较耗时
+        */
+        std::sort(result.begin(), result.end());
 
         resVecVec.push_back(result);
         // printf("resVecVec.size=%ld\r\n", resVecVec.size());
@@ -315,6 +319,74 @@ void arrange::recursion( const vector<int> &oriVec,
             //针对当前index, 遍历剩余可用的数填充递归
             resVec[index] = oriVec[i];
             recursion(oriVec, resVec, i+1, index+1, remain-1, resVecVec, constVec);
+        }
+    }
+}
+
+
+void arrange::recursion( const vector<int> &oriVec,
+                vector<int> resVec,
+                int start, int index, int remain,
+                set<vector<int>> &resVecVec)
+{
+    if (remain == 0)
+    {
+        //当待填充的个数为0时，表示结束
+        // for(const auto &elem : resVec)
+        // {
+        //     printf("%d\t", elem);
+        // }
+        // printf("\r\n");
+        resVecVec.insert(resVec);
+
+        /**
+         * 选用vector是因为vector的insert操作比较高效，但是sort比较耗时
+         * 为了提升递归循环的效率，重新排序可以放到外面，因为sort操作比较耗时
+        */
+        // std::sort(resVecVec.begin(), resVecVec.end());
+        // printf("resVecVec.size=%ld\r\n", resVecVec.size());
+    }
+    else
+    {
+        for(int i=start; i<static_cast<int>(oriVec.size()); i++)
+        {
+            //针对当前index, 遍历剩余可用的数填充递归
+            resVec[index] = oriVec[i];
+            recursion(oriVec, resVec, i+1, index+1, remain-1, resVecVec);
+        }
+    }
+}
+
+
+void arrange::recursion( const vector<int> &oriVec,
+                vector<int> resVec,
+                int start, int index, int remain,
+                vector<vector<int>> &resVecVec)
+{
+    if (remain == 0)
+    {
+        //当待填充的个数为0时，表示结束
+        // for(const auto &elem : resVec)
+        // {
+        //     printf("%d\t", elem);
+        // }
+        // printf("\r\n");
+        resVecVec.push_back(resVec);
+
+        /**
+         * 选用vector是因为vector的insert操作比较高效，但是sort比较耗时
+         * 为了提升递归循环的效率，重新排序可以放到外面，因为sort操作比较耗时
+        */
+        // std::sort(resVecVec.begin(), resVecVec.end());
+        // printf("resVecVec.size=%ld\r\n", resVecVec.size());
+    }
+    else
+    {
+        for(int i=start; i<static_cast<int>(oriVec.size()); i++)
+        {
+            //针对当前index, 遍历剩余可用的数填充递归
+            resVec[index] = oriVec[i];
+            recursion(oriVec, resVec, i+1, index+1, remain-1, resVecVec);
         }
     }
 }

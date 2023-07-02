@@ -3,27 +3,30 @@
 
 sqlite_tb* MyTask::mMyDb = nullptr;
 std::mutex MyTask::mLock;
-map<vector<int>, int> MyTask::mSave8RetMap;//->统计gVecBingoVec中每个子集合和对应命中结果的表
+set<vector<int>> MyTask::mSet8VecTotal = set<vector<int>>();
+map<vector<int>, int> MyTask::mSave8RetMap = map<vector<int>, int>();//->统计gVecBingoVec中每个子集合和对应命中结果的表
 MyTask::MyTask(const vector<int> &bingoVec)
-    :mVecBingo(bingoVec)
+    :mVec8Vec(vector<vector<int>>())
+    ,mVecBingo(bingoVec)
     ,mSaveVec6RetDb("")
     ,mSaveVec8RetDb("")
     ,mDb8Sql(nullptr)
     ,mTotalBingo(0)
     ,mVecBingoToStrs("")
 {
-    mVec8Vec.clear();
+
 }
 
 MyTask::MyTask()
-    :mSaveVec6RetDb("")
+    :mVec8Vec(vector<vector<int>>())
+    ,mVecBingo(vector<int>())
+    ,mSaveVec6RetDb("")
     ,mSaveVec8RetDb("")
     ,mDb8Sql(nullptr)
     ,mTotalBingo(0)
     ,mVecBingoToStrs("")
 {
-    mVecBingo.clear();
-    mVec8Vec.clear();
+
 }
 
 MyTask::~MyTask()
@@ -33,6 +36,11 @@ MyTask::~MyTask()
         delete mDb8Sql;
         mDb8Sql = nullptr;
     }
+    freeResource<vector<vector<int>>>(mVec8Vec);
+    freeResource<vector<int>>(mVecBingo);
+    freeResource<string>(mSaveVec6RetDb);
+    freeResource<string>(mSaveVec8RetDb);
+    freeResource<string>(mVecBingoToStrs);
 }
 
 bool MyTask::init()
@@ -140,7 +148,16 @@ void MyTask::updateVec8RetMap(const vector<int> &vecBingo, const int &retInt)
 }
 
 
-bool MyTask::genChild8MembersDb(const vector<int> vec8)
+void MyTask::genSet8VecTotal(const vector<vector<int>> &vec8vec)
+{
+    std::unique_lock<std::mutex> munique(mLock);
+    mSet8VecTotal.insert(vec8vec.begin(), vec8vec.end());
+    printf("mSet8VecTotal.size=%ld\r\n", mSet8VecTotal.size());
+    return;
+}
+
+
+bool MyTask::genChild8MembersDb(const vector<int> &vec8)
 {
     bool retBool = false;
     int retInt = 0;
@@ -172,22 +189,27 @@ bool MyTask::genChild8MembersDb(const vector<int> vec8)
     // printf("insertData=%s\r\n", insertData.c_str());
     retBool = mDb8Sql->InsertData(insertData);
 
+    insertData.clear(); string().swap(insertData);
+
     return retBool;
 }
 
 void MyTask::createChild8MembersSql()
 {
     string insertData = "(\"";
-	vector<int> oriVec;
+	vector<int> oriVec = vector<int>();
 	vector<int> resVec(2, 0);
 	//1,找出补集
 	getComplementVec(mVecBingo, oriVec);
 
 	arrange::recursion(oriVec, resVec, 0, 0, static_cast<int>(resVec.size()), mVec8Vec, mVecBingo);
 
+#if 1
+    genSet8VecTotal(mVec8Vec);
+#else
 	for(const auto &vec8:mVec8Vec)
 	{
-        createChild6MembersSql(vec8);
+        // createChild6MembersSql(vec8);
         genChild8MembersDb(vec8);
 	}
 
@@ -195,7 +217,11 @@ void MyTask::createChild8MembersSql()
     printf("insertData=%s\r\n", insertData.c_str());
     mDb8Sql->InsertData(insertData);
     updateVec8RetMap(mVecBingo, mTotalBingo);
+#endif
 
+    oriVec.clear();vector<int>().swap(oriVec);
+    resVec.clear();vector<int>().swap(resVec);
+    insertData.clear(); string().swap(insertData);
 	return;
 }
 

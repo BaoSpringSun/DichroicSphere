@@ -88,17 +88,6 @@ public:
 
     bool ThreadPoolInit()
     {
-        MyTask::mMyDb = new sqlite_tb();
-        if(nullptr == MyTask::mMyDb)
-        {
-            printf("error:new MyTask::mMyDb is failed.\r\n");
-            return false;
-        }
-
-        MyTask::mMyDb->OpenDB();
-
-        MyTask::mSave8RetMap.clear();
-
         for(int i=0;i<thread_num;i++)//创建线程池中的线程
         {
             pthread_t tid;

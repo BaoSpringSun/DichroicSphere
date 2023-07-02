@@ -14,15 +14,16 @@ public:
     ~MyTask();
 
     void run();
-    static bool findVec8RetFromMyDb(const vector<int> vec8, int &ret);
-    static void updateVec8RetMap(const vector<int> &vecBingo, const int &retInt);
 
 private:
     bool init();
     void getComplementVec(const vector<int> inputVec, vector<int> &outputVec);
     void createChild6MembersSql(const vector<int> &elemVec);
     void createChild8MembersSql();
-    bool genChild8MembersDb(const vector<int> vec8);
+    bool genChild8MembersDb(const vector<int> &vec8);
+    void genSet8VecTotal(const vector<vector<int>> &vec8vec);
+    bool findVec8RetFromMyDb(const vector<int> vec8, int &ret);
+    void updateVec8RetMap(const vector<int> &vecBingo, const int &retInt);
 
 private:
     vector<vector<int>> mVec8Vec;   //根据每期中奖的6个号，对应生成包含其的8个号的集合,size = (27*26)/(2*1) = 351;
@@ -37,7 +38,5 @@ public:
     static sqlite_tb *mMyDb;
     static std::mutex mLock;//互斥锁
     static map<vector<int>, int> mSave8RetMap;
+    static set<vector<int>> mSet8VecTotal;
 };
-
-
-
