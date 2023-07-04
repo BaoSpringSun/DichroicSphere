@@ -650,6 +650,10 @@ bool sqlite_tb::SelectDataByDate(const string &dateStart, const string &dateEnd,
     {
         sqlcmd = "select * from tbldatas";
     }
+    else if(vecElemsNum == 7)
+    {
+        sqlcmd = "select yellow1,yellow2,yellow3,yellow4,yellow5,blue1,blue2 from tbldatas";
+    }
     else
     {
         printf("the input paras vecElemsNum is wrong:%d\r\n", vecElemsNum);
@@ -673,32 +677,35 @@ bool sqlite_tb::SelectDataByDate(const string &dateStart, const string &dateEnd,
 
     if(resVec.size() > 0)
     {//清空容器，避免有脏数据
-        resVec.clear();
-        vector<vector<int>>().swap(resVec);
+        freeResource<vector<vector<int>>>(resVec);
     }
 
     // printf("[%s]--nrow = %d\r\n",__FUNCTION__, nrow);
     int i = 0, j = 0;
 	for (i = 0; i < (nrow + 1)*ncolumn; i += ncolumn)
 	{
-        vector<int> data;
+        vector<int> data = vector<int>();
         bool isInsert = true;
 		for (j = 0; j < ncolumn; j++)
 		{
             int result = stringToNumber<int>(db_result[i + j]);
-            if(0 == result)
+            /**
+             * 数据库的第一栏 colum1的数据是非0的~
+            */
+            if((0 == result) && (data.size() == 0))
             {
                 isInsert = false;
                 break;
             }
             data.push_back(result);
-			// printf("%s\t", db_result[i + j]);
+            // printf("%s\t", db_result[i + j]);
             // printf("%d\t", result);
 		}
         if(false != isInsert)
         {
             resVec.push_back(data);
         }
+        freeResource<vector<int>>(data);
 		// printf("\r\n");
 	}
     sqlite3_free_table(db_result);
@@ -813,7 +820,7 @@ bool sqlite_tb::SelectGetTotalRows()
             long result = stringToNumber<long>(db_result[i + j]);
             if(result)
             {
-                // printf("db size is %ld\r\n", result);
+                printf("db size is %ld\r\n", result);
             }
 		}
 		// printf("\r\n");

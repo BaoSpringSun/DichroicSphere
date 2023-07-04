@@ -22,12 +22,14 @@
 #include "shuangseqiu.hpp"
 #include "pailie5.hpp"
 #include "pailie3.hpp"
+#include "qixingcai.hpp"
+#include "daletou.hpp"
 
 using namespace std;
 
 
 int main(int argc, char** argv)
 {
-	sample_pailie3_main(argc, argv);
+	sample_daletou_main(argc, argv);
 	return 0;
 }

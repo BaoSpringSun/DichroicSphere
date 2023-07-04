@@ -22,7 +22,7 @@
 #include "pailie3.hpp"
 using namespace std;
 
-#define     SELECT_DATE_START                               "04001"
+#define     SELECT_DATE_START                               "00001"
 #define     SELECT_DATE_END                                 "23173"
 
 __attribute__((unused)) static bool defineCmpRule(const pair<int, vector<int>> &a,
@@ -91,8 +91,43 @@ void PAILIE3_C::init()
 
 void PAILIE3_C::operateStart()
 {
-    // checkDatasByUnit();
-    checkDatasByTens();
+    checkDatasByUnit();
+    // checkDatasByTens();
+    return;
+}
+
+void PAILIE3_C::printVecPairIntMapVec(const vector<pair<int, vector<int>>> &vecPairIntMapVec)
+{
+    set<int> count = set<int>();
+    vector<pair<int, int>> vecPairInt2Int = vector<pair<int, int>>();
+    for(const auto &pairElem : vecPairIntMapVec)
+    {
+        count.insert(static_cast<int>(pairElem.second.size()));
+    }
+
+    for(const auto &elem : count)
+    {
+        int index = 0;
+        for(const auto &pairElem : vecPairIntMapVec)
+        {
+            if(static_cast<int>(pairElem.second.size()) == elem)
+            {
+                index++;
+            }
+        }
+        vecPairInt2Int.push_back(make_pair(elem, index));
+    }
+    sort(vecPairInt2Int.begin(), vecPairInt2Int.end(), sortVec_ToDown);
+    printf("----------------------------\r\n");
+    for(const auto &elemPair : vecPairInt2Int)
+    {
+        printf("[%d]:%d\r\n", elemPair.first, elemPair.second);
+    }
+    printf("----------------------------\r\n");
+
+    freeResource<vector<pair<int, int>>>(vecPairInt2Int);
+    freeResource<set<int>>(count);
+
     return;
 }
 
@@ -100,12 +135,14 @@ void PAILIE3_C::printIntMapVec(const map<int, vector<int>> &intMapVec, unsigned 
 {
     vector<pair<int, vector<int>>>vecPairIntMapVec(intMapVec.begin(), intMapVec.end());
 	sort(vecPairIntMapVec.begin(), vecPairIntMapVec.end(), defineCmpRule);
+
     printf("****************************\r\n");
     for(const auto &pairElem : vecPairIntMapVec)
     {
         printf("%5d:\t%ld\r\n", pairElem.first*step, pairElem.second.size());
     }
     printf("****************************\r\n");
+    printVecPairIntMapVec(vecPairIntMapVec);
 
 	// for(const auto &pairElem : vecPairIntMapVec)
 	// {

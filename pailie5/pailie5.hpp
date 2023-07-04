@@ -27,6 +27,7 @@ private:
     void initDatas(const vector<vector<int>> &vec2Vec);
     void getTheMultiDatas(const vector<int> &datas);
     void printIntMapVec(const map<int, vector<int>> &intMapVec, unsigned int step);
+    void printVecPairIntMapVec(const vector<pair<int, vector<int>>> &vecPairIntMapVec);
     void checkDatasByTenThousands();
     void checkDatasByThousands();
     void checkDatasByHundreds();

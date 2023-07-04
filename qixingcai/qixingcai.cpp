@@ -22,8 +22,8 @@
 #include "qixingcai.hpp"
 using namespace std;
 
-#define     SELECT_DATE_START                               "04001"
-#define     SELECT_DATE_END                                 "23173"
+#define     SELECT_DATE_START                               "00001"
+#define     SELECT_DATE_END                                 "23050"
 
 __attribute__((unused)) static bool defineCmpRule(const pair<int, vector<int>> &a,
 						  const pair<int, vector<int>> &b)
@@ -71,7 +71,8 @@ int sample_qixingcai_main(int argc, char** argv)
 
 QIXINGCAI_C::QIXINGCAI_C()
     :mVec2Vec(vector<vector<int>>())
-    ,mDatas(vector<vector<int>>())
+    ,mDatas(vector<int>())
+    ,mData2s(vector<int>())
 {
 
 }
@@ -79,7 +80,8 @@ QIXINGCAI_C::QIXINGCAI_C()
 QIXINGCAI_C::~QIXINGCAI_C()
 {
     freeResource<vector<vector<int>>>(mVec2Vec);
-    freeResource<vector<vector<int>>>(mDatas);
+    freeResource<vector<int>>(mDatas);
+    freeResource<vector<int>>(mData2s);
 }
 
 void QIXINGCAI_C::init()
@@ -91,39 +93,174 @@ void QIXINGCAI_C::init()
 
 void QIXINGCAI_C::operateStart()
 {
-    // checkDatasByUnit();
-    checkDatasByTens();
+    // checkDatasByTenThousands();
+    checkDatasByThousands();
+    // checkDatasByHundreds();
+    // checkDatasByTens();
+    checkData2s();
+    return;
+}
+
+void QIXINGCAI_C::printVecPairIntMapVec(const vector<pair<int, vector<int>>> &vecPairIntMapVec)
+{
+    set<int> count = set<int>();
+    vector<pair<int, int>> vecPairInt2Int = vector<pair<int, int>>();
+    for(const auto &pairElem : vecPairIntMapVec)
+    {
+        count.insert(static_cast<int>(pairElem.second.size()));
+    }
+
+    for(const auto &elem : count)
+    {
+        int index = 0;
+        for(const auto &pairElem : vecPairIntMapVec)
+        {
+            if(static_cast<int>(pairElem.second.size()) == elem)
+            {
+                index++;
+            }
+        }
+        vecPairInt2Int.push_back(make_pair(elem, index));
+    }
+    sort(vecPairInt2Int.begin(), vecPairInt2Int.end(), sortVec_ToDown);
+    printf("----------------------------\r\n");
+    for(const auto &elemPair : vecPairInt2Int)
+    {
+        printf("[%d]:%d\r\n", elemPair.first, elemPair.second);
+    }
+    printf("----------------------------\r\n");
+
+    freeResource<vector<pair<int, int>>>(vecPairInt2Int);
+    freeResource<set<int>>(count);
+
     return;
 }
 
 void QIXINGCAI_C::printIntMapVec(const map<int, vector<int>> &intMapVec, unsigned int step)
 {
-    vector<pair<int, vector<int>>>vecPairIntMapVec(intMapVec.begin(), intMapVec.end());
+    vector<pair<int, vector<int>>> vecPairIntMapVec(intMapVec.begin(), intMapVec.end());
 	sort(vecPairIntMapVec.begin(), vecPairIntMapVec.end(), defineCmpRule);
+
     printf("****************************\r\n");
     for(const auto &pairElem : vecPairIntMapVec)
     {
         printf("%5d:\t%ld\r\n", pairElem.first*step, pairElem.second.size());
     }
     printf("****************************\r\n");
-
-	// for(const auto &pairElem : vecPairIntMapVec)
-	// {
-	// 	printf("%5d:\t%ld\r\n", pairElem.first*step, pairElem.second.size());
-	// 	for(const auto &elem : pairElem.second)
-    //     {
-    //         printf("\t%d_\r\n", elem);
-    //     }printf("\t\r\n");
-	// }
+    printVecPairIntMapVec(vecPairIntMapVec);
+	for(const auto &pairElem : vecPairIntMapVec)
+	{
+		printf("%5d:\t%ld\r\n", pairElem.first*step, pairElem.second.size());
+		for(const auto &elem : pairElem.second)
+        {
+            printf("\t%d_\r\n", elem);
+        }printf("\t\r\n");
+	}
 
     freeResource<vector<pair<int, vector<int>>>>(vecPairIntMapVec);
+    return;
+}
+
+void QIXINGCAI_C::checkData2s()
+{
+    map<int, int> intMapInt = map<int, int>();
+    vector<pair<int, int>> vecPairInt2Int = vector<pair<int, int>>();
+    for(int i=0;i<15;i++)
+    {
+        int temp = 0;
+        for(const auto &elem:mData2s)
+        {
+            if(elem == i)
+            {
+                temp++;
+            }
+        }
+        intMapInt.emplace(i, temp);
+    }
+    vecPairInt2Int.insert(vecPairInt2Int.end(), intMapInt.begin(), intMapInt.end());
+    sort(vecPairInt2Int.begin(), vecPairInt2Int.end(), sortVec_ToDown);
+    printf("++++++++++++++++++++++++++++\r\n");
+    for(const auto &elemPair : vecPairInt2Int)
+    {
+        printf("[%d]:%d\r\n", elemPair.first, elemPair.second);
+    }
+    printf("++++++++++++++++++++++++++++\r\n");
+
+    freeResource<vector<pair<int, int>>>(vecPairInt2Int);
+    freeResource<map<int, int>>(intMapInt);
+    return;
+}
+
+void QIXINGCAI_C::checkDatasByTenThousands()
+{
+    map<int, vector<int>> intMapVec = map<int, vector<int>>();
+    for(int i=0;i<100;i++)
+    {
+        vector<int> temp = vector<int>();
+        for(const auto &elem:mDatas)
+        {
+            if(elem/10000 == i)
+            {
+                temp.push_back(elem);
+            }
+        }
+        intMapVec.emplace(i, temp);
+        freeResource<vector<int>>(temp);
+    }
+
+    printIntMapVec(intMapVec, 10000);
+    freeResource<map<int, vector<int>>>(intMapVec);
+    return;
+}
+
+void QIXINGCAI_C::checkDatasByThousands()
+{
+    map<int, vector<int>> intMapVec = map<int, vector<int>>();
+    for(int i=0;i<1000;i++)
+    {
+        vector<int> temp = vector<int>();
+        for(const auto &elem:mDatas)
+        {
+            if(elem/1000 == i)
+            {
+                temp.push_back(elem);
+            }
+        }
+        intMapVec.emplace(i, temp);
+        freeResource<vector<int>>(temp);
+    }
+
+    printIntMapVec(intMapVec, 1000);
+    freeResource<map<int, vector<int>>>(intMapVec);
+    return;
+}
+
+void QIXINGCAI_C::checkDatasByHundreds()
+{
+    map<int, vector<int>> intMapVec = map<int, vector<int>>();
+    for(int i=0;i<10000;i++)
+    {
+        vector<int> temp = vector<int>();
+        for(const auto &elem:mDatas)
+        {
+            if(elem/100 == i)
+            {
+                temp.push_back(elem);
+            }
+        }
+        intMapVec.emplace(i, temp);
+        freeResource<vector<int>>(temp);
+    }
+
+    printIntMapVec(intMapVec, 100);
+    freeResource<map<int, vector<int>>>(intMapVec);
     return;
 }
 
 void QIXINGCAI_C::checkDatasByTens()
 {
     map<int, vector<int>> intMapVec = map<int, vector<int>>();
-    for(int i=0;i<100;i++)
+    for(int i=0;i<100000;i++)
     {
         vector<int> temp = vector<int>();
         for(const auto &elem:mDatas)
@@ -138,28 +275,6 @@ void QIXINGCAI_C::checkDatasByTens()
     }
 
     printIntMapVec(intMapVec, 10);
-    freeResource<map<int, vector<int>>>(intMapVec);
-    return;
-}
-
-void QIXINGCAI_C::checkDatasByUnit()
-{
-    map<int, vector<int>> intMapVec = map<int, vector<int>>();
-    for(int i=0;i<1000;i++)
-    {
-        vector<int> temp = vector<int>();
-        for(const auto &elemVec:mDatas)
-        {
-            if(elemVec[0] == i)
-            {
-                temp.push_back(elem);
-            }
-        }
-        intMapVec.emplace(i, temp);
-        freeResource<vector<int>>(temp);
-    }
-
-    printIntMapVec(intMapVec, 1);
     freeResource<map<int, vector<int>>>(intMapVec);
     return;
 }
@@ -237,7 +352,8 @@ void QIXINGCAI_C::initDatas(const vector<vector<int>> &vec2Vec)
             printf("error[%d]:the input paras vec2Vec is wrong~\r\n", __LINE__);
             break;
         }
-        mDatas.insert(mDatas.end(), elemVec2.begin()+1, elemVec2.end());
+        mDatas.push_back(elemVec2[1]);
+        mData2s.push_back(elemVec2[2]);
     }
 
     if(mDatas.size() != vec2Vec.size())
@@ -246,7 +362,12 @@ void QIXINGCAI_C::initDatas(const vector<vector<int>> &vec2Vec)
     }
     printf("mDatas.size=%ld\r\n", mDatas.size());
 
-    // getTheMultiDatas(mDatas);
+    printf("****************************\r\n");
+    getTheMultiDatas(mDatas);
+    printf("****************************\r\n");
+    printf("++++++++++++++++++++++++++++\r\n");
+    getTheMultiDatas(mData2s);
+    printf("++++++++++++++++++++++++++++\r\n");
     return;
 }
 

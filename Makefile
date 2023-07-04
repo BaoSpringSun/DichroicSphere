@@ -14,6 +14,8 @@ CFLAGS += -I./observer/
 CFLAGS += -I./zmq/
 CFLAGS += -I./pailie5/
 CFLAGS += -I./pailie3/
+CFLAGS += -I./qixingcai/
+CFLAGS += -I./daletou/
 CFLAGS += -I./shuangseqiu/
 
 #以下是源文件
@@ -32,6 +34,8 @@ SRCS += ./observer/testMain.cpp
 SRCS += ./zmq/zmq.cpp
 SRCS += ./pailie5/pailie5.cpp
 SRCS += ./pailie3/pailie3.cpp
+SRCS += ./qixingcai/qixingcai.cpp
+SRCS += ./daletou/daletou.cpp
 SRCS += ./shuangseqiu/shuangseqiu.cpp
 
 #以下是指定需要的库文件
@@ -41,7 +45,7 @@ LIBS += -L/usr/local/lib -ljsoncpp
 #以下是指定目标文件 所有当.c文件变成.o文件
 OBJS = $(SRCS:.cpp=.o)
 #以下是生成可执行文件 VER:childBingoFinal_13
-EXECUTABLE = sample_pailie3_main
+EXECUTABLE = main
 
 .PHONY:all clean
 
