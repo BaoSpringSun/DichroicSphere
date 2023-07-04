@@ -1,3 +1,6 @@
+/**
+ * 较高概率，还是可以统计推测出结果~
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
@@ -23,7 +26,7 @@
 using namespace std;
 
 #define     SELECT_DATE_START                               "00001"
-#define     SELECT_DATE_END                                 "23173"
+#define     SELECT_DATE_END                                 "23175"
 
 __attribute__((unused)) static bool defineCmpRule(const pair<int, vector<int>> &a,
 						  const pair<int, vector<int>> &b)
@@ -121,7 +124,7 @@ void PAILIE3_C::printVecPairIntMapVec(const vector<pair<int, vector<int>>> &vecP
     printf("----------------------------\r\n");
     for(const auto &elemPair : vecPairInt2Int)
     {
-        printf("[%d]:%d\r\n", elemPair.first, elemPair.second);
+        printf("\t%d (个) [%d]\r\n", elemPair.second, elemPair.first);
     }
     printf("----------------------------\r\n");
 
@@ -139,7 +142,7 @@ void PAILIE3_C::printIntMapVec(const map<int, vector<int>> &intMapVec, unsigned 
     printf("****************************\r\n");
     for(const auto &pairElem : vecPairIntMapVec)
     {
-        printf("%5d:\t%ld\r\n", pairElem.first*step, pairElem.second.size());
+        printf("\t%5d:\t[%ld]\r\n", pairElem.first*step, pairElem.second.size());
     }
     printf("****************************\r\n");
     printVecPairIntMapVec(vecPairIntMapVec);

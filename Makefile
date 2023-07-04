@@ -7,6 +7,7 @@ CFLAGS += -I./arrange/
 CFLAGS += -I./promise/
 CFLAGS += -I./myjson/
 CFLAGS += -I./sqlitetbl/
+CFLAGS += -I./demo/
 CFLAGS += -I./task/
 CFLAGS += -I./task2/
 CFLAGS += -I./threadpool/
@@ -23,15 +24,16 @@ SRCS = main.cpp#多个不同文件的话后面可以加空格继续添加
 SRCS += ./sqlitetbl/sqlitetbl.cpp
 SRCS += ./myjson/myjson.cpp
 SRCS += ./arrange/arrange.cpp
-SRCS += ./promise/promise.cpp
-SRCS += ./task/task.cpp
-SRCS += ./task2/task2.cpp
-SRCS += ./threadpool/threadpool.cpp
-SRCS += ./threadpool/threadpool_YunZhiSheng.cpp
-SRCS += ./observer/observer.cpp
-SRCS += ./observer/subserver.cpp
-SRCS += ./observer/testMain.cpp
-SRCS += ./zmq/zmq.cpp
+# SRCS += ./promise/promise.cpp
+# SRCS += ./demo/demo.cpp
+# SRCS += ./task/task.cpp
+# SRCS += ./task2/task2.cpp
+# SRCS += ./threadpool/threadpool.cpp
+# SRCS += ./threadpool/threadpool_YunZhiSheng.cpp
+# SRCS += ./observer/observer.cpp
+# SRCS += ./observer/subserver.cpp
+# SRCS += ./observer/testMain.cpp
+# SRCS += ./zmq/zmq.cpp
 SRCS += ./pailie5/pailie5.cpp
 SRCS += ./pailie3/pailie3.cpp
 SRCS += ./qixingcai/qixingcai.cpp
@@ -44,7 +46,7 @@ LIBS += -L/usr/local/lib -ljsoncpp
 
 #以下是指定目标文件 所有当.c文件变成.o文件
 OBJS = $(SRCS:.cpp=.o)
-#以下是生成可执行文件 VER:childBingoFinal_13
+#以下是生成可执行文件 VER:
 EXECUTABLE = main
 
 .PHONY:all clean

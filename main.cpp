@@ -19,17 +19,18 @@
 #include "observer.hpp"
 #include "subserver.hpp"
 #include "zmq.hpp"
-#include "shuangseqiu.hpp"
+#include "demo.hpp"
 #include "pailie5.hpp"
 #include "pailie3.hpp"
 #include "qixingcai.hpp"
 #include "daletou.hpp"
+#include "shuangseqiu.hpp"
 
 using namespace std;
 
 
 int main(int argc, char** argv)
 {
-	sample_daletou_main(argc, argv);
+	sample_qixingcai_main(argc, argv);
 	return 0;
 }

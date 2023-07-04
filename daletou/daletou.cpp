@@ -23,7 +23,7 @@
 using namespace std;
 
 #define     SELECT_DATE_START                               "00001"
-#define     SELECT_DATE_END                                 "23073"
+#define     SELECT_DATE_END                                 "23075"
 
 __attribute__((unused)) static bool defineCmpRule(const pair<int, vector<int>> &a,
 						  const pair<int, vector<int>> &b)
@@ -48,6 +48,31 @@ __attribute__((unused)) static bool sortVec_ToDown(const pair<int, int> &a, cons
     if(a.second != b.second)
     {
         return a.second > b.second;
+    }
+    else
+    {
+        return a.first < b.first;
+    }
+}
+
+__attribute__((unused)) static bool sortVec_ToDown2(const pair<string, int> &a, const pair<string, int> &b)
+{
+    if(a.second != b.second)
+    {
+        return a.second > b.second;
+    }
+    else
+    {
+        return a.first < b.first;
+    }
+}
+
+__attribute__((unused)) static bool sortVec_ToDown3(const pair<string, vector<vector<int>>> &a,
+                                                    const pair<string, vector<vector<int>>> &b)
+{
+    if(a.second.size() != b.second.size())
+    {
+        return a.second.size() > b.second.size();
     }
     else
     {
@@ -93,25 +118,24 @@ void DALETOU_C::init()
 
 void DALETOU_C::operateStart()
 {
-
     return;
 }
 
-void DALETOU_C::printVecPairIntMapVec(const vector<pair<int, vector<int>>> &vecPairIntMapVec)
+void DALETOU_C::printVecPairIntMapVec(const vector<pair<string, int>> &vecPairStr2Int)
 {
     set<int> count = set<int>();
     vector<pair<int, int>> vecPairInt2Int = vector<pair<int, int>>();
-    for(const auto &pairElem : vecPairIntMapVec)
+    for(const auto &pairElem : vecPairStr2Int)
     {
-        count.insert(static_cast<int>(pairElem.second.size()));
+        count.insert(pairElem.second);
     }
 
     for(const auto &elem : count)
     {
         int index = 0;
-        for(const auto &pairElem : vecPairIntMapVec)
+        for(const auto &pairElem : vecPairStr2Int)
         {
-            if(static_cast<int>(pairElem.second.size()) == elem)
+            if(pairElem.second == elem)
             {
                 index++;
             }
@@ -119,12 +143,12 @@ void DALETOU_C::printVecPairIntMapVec(const vector<pair<int, vector<int>>> &vecP
         vecPairInt2Int.push_back(make_pair(elem, index));
     }
     sort(vecPairInt2Int.begin(), vecPairInt2Int.end(), sortVec_ToDown);
-    printf("----------------------------\r\n");
+    printf("/----------------------------/\r\n");
     for(const auto &elemPair : vecPairInt2Int)
     {
-        printf("[%d]:%d\r\n", elemPair.first, elemPair.second);
+        printf("\t%d (个) [%d]\r\n", elemPair.second, elemPair.first);
     }
-    printf("----------------------------\r\n");
+    printf("/----------------------------/\r\n");
 
     freeResource<vector<pair<int, int>>>(vecPairInt2Int);
     freeResource<set<int>>(count);
@@ -132,53 +156,64 @@ void DALETOU_C::printVecPairIntMapVec(const vector<pair<int, vector<int>>> &vecP
     return;
 }
 
-void DALETOU_C::printIntMapVec(const map<int, vector<int>> &intMapVec, unsigned int step)
-{
-    vector<pair<int, vector<int>>> vecPairIntMapVec(intMapVec.begin(), intMapVec.end());
-	sort(vecPairIntMapVec.begin(), vecPairIntMapVec.end(), defineCmpRule);
-
-    printf("****************************\r\n");
-    for(const auto &pairElem : vecPairIntMapVec)
-    {
-        printf("%5d:\t%ld\r\n", pairElem.first*step, pairElem.second.size());
-    }
-    printf("****************************\r\n");
-    printVecPairIntMapVec(vecPairIntMapVec);
-	for(const auto &pairElem : vecPairIntMapVec)
-	{
-		printf("%5d:\t%ld\r\n", pairElem.first*step, pairElem.second.size());
-		for(const auto &elem : pairElem.second)
-        {
-            printf("\t%d_\r\n", elem);
-        }printf("\t\r\n");
-	}
-
-    freeResource<vector<pair<int, vector<int>>>>(vecPairIntMapVec);
-    return;
-}
-
 template<typename T>
-void DALETOU_C::getTheMultiDatas(const vector<vector<int>> &vecVec, const T &maps)
+void DALETOU_C::getTheMultiDatas(const vector<vector<int>> &vecVec, const T &maps, bool yesNo)
 {
     map<string, int> mapStr2Int = map<string, int>();
+    vector<pair<string, vector<vector<int>>>> vecPairStrMapVecVec = vector<pair<string, vector<vector<int>>>>();
+    vector<pair<string, int>> vecPairStr2Int = vector<pair<string, int>>();
     for(const auto &pairs:maps)
     {
         int index = 0;
+        vector<vector<int>> temp = vector<vector<int>>();
         for(const auto &elemVec:vecVec)
         {
             if(false != checkVecIsInVecVec(pairs.second, elemVec))
             {
                 index++;
+                temp.push_back(elemVec);
             }
         }
-        mapStr2Int.emplace(pairs.first+to_string(index), index);
+        mapStr2Int.emplace(pairs.first, index);
+        if(yesNo)
+        {
+            vecPairStrMapVecVec.push_back(make_pair(pairs.first, temp));
+        }
     }
 
-    for(const auto &elemPair:mapStr2Int)
+    vecPairStr2Int.insert(vecPairStr2Int.end(), mapStr2Int.begin(), mapStr2Int.end());
+    sort(vecPairStr2Int.begin(), vecPairStr2Int.end(), sortVec_ToDown2);
+
+    printf("/*****************************/\r\n");
+    for(const auto &elemPair:vecPairStr2Int)
     {
-        printf("%s:%d\r\n", elemPair.first.c_str(), elemPair.second);
+        printf("(%s):\t[%d]\r\n", elemPair.first.c_str(), elemPair.second);
     }
+    printf("/*****************************/\r\n");
+    printVecPairIntMapVec(vecPairStr2Int);
+
+    if(yesNo)
+    {
+        sort(vecPairStrMapVecVec.begin(), vecPairStrMapVecVec.end(), sortVec_ToDown3);
+        for(const auto &pairElem : vecPairStrMapVecVec)
+        {
+            printf("(%s):\t[%ld]\r\n", pairElem.first.c_str(), pairElem.second.size());
+            for(const auto &elemVec : pairElem.second)
+            {
+                printf("\t");
+                for(const auto &elem : elemVec)
+                {
+                    printf("%d_", elem);
+                }
+                printf("\r\n");
+            }
+            printf("\t\r\n");
+        }
+    }
+
+    freeResource<vector<pair<string, vector<vector<int>>>>>(vecPairStrMapVecVec);
     freeResource<map<string, int>>(mapStr2Int);
+    freeResource<vector<pair<string, int>>>(vecPairStr2Int);
     return;
 }
 
@@ -218,6 +253,11 @@ bool DALETOU_C::checkVecIsInVecVec(const vector<vector<int>> &vecVec, const vect
 */
 void DALETOU_C::initDatas(const vector<vector<int>> &vec2Vec)
 {
+    string blueStr = "";
+    string yellowStr = "yeBlock";
+    int operaIndex = 0;
+    vector<vector<int>> vecVecBlock = vector<vector<int>>();
+    set<vector<int>> setVecCheckYe = set<vector<int>>();
     set<vector<int>> setVecCheckBl = set<vector<int>>();
     map<string, vector<vector<int>>> mapStr2VecVecYe = map<string, vector<vector<int>>>();
     map<string, vector<int>> mapStr2VecBl = map<string, vector<int>>();
@@ -231,23 +271,80 @@ void DALETOU_C::initDatas(const vector<vector<int>> &vec2Vec)
         freeResource<vector<int>>(tempBl);
     }
 
+    arrange::startTime();
+    printf("getTheWholeData->startTime~\r\n");
+    getTheWholeData(setVecCheckYe);
+    arrange::endTime();
+    for(const auto &elemVec : setVecCheckYe)
+    {
+        vecVecBlock.push_back(elemVec);
+        if(vecVecBlock.size() > 1000)
+        {
+            operaIndex++;
+            mapStr2VecVecYe.emplace(yellowStr+to_string(operaIndex), vecVecBlock);
+            freeResource<vector<vector<int>>>(vecVecBlock);
+        }
+    }
+    if(vecVecBlock.size() > 0)
+    {
+        operaIndex++;
+        mapStr2VecVecYe.emplace(yellowStr+to_string(operaIndex), vecVecBlock);
+        freeResource<vector<vector<int>>>(vecVecBlock);
+    }
+
     setVecCheckBl.insert(mBlDatas.begin(), mBlDatas.end());
     printf("[Bl]setVecCheckBl.size=%ld\r\n", setVecCheckBl.size());
     for(const auto &elemVec : setVecCheckBl)
     {
-        printf("[Bl]elemVec.size=%ld\r\n", elemVec.size());
+        for(const auto &elem : elemVec)
+        {
+            blueStr = blueStr + " " + to_string(elem);
+        }
+        blueStr = blueStr + " ";
+        // printf("[Bl] = %s\r\n", blueStr.c_str());
+        mapStr2VecBl.emplace(blueStr, elemVec);
+        freeResource<string>(blueStr);
+        blueStr = "";
     }
     // for(const auto &elemVec : mYeDatas)
     // {
     //     printf("[Ye]elemVec.size=%ld\r\n", elemVec.size());
     // }
 
-    getTheMultiDatas<map<string, vector<vector<int>>>>(mBlDatas, mapStr2VecVecYe);
+    arrange::startTime();
+    printf("getTheMultiDatas[mYeDatas]->startTime~\r\n");
+    getTheMultiDatas<map<string, vector<vector<int>>>>(mYeDatas, mapStr2VecVecYe, false);
+    arrange::endTime();
+    printf("/+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++/\r\n");
+    printf("/-------------------------------------------------------------/\r\n");
+    printf("/+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++/\r\n");
+    arrange::startTime();
+    printf("getTheMultiDatas[mBlDatas]->startTime~\r\n");
     getTheMultiDatas<map<string, vector<int>>>(mBlDatas, mapStr2VecBl);
+    arrange::endTime();
 
+    freeResource<set<vector<int>>>(setVecCheckYe);
     freeResource<set<vector<int>>>(setVecCheckBl);
     freeResource<map<string, vector<vector<int>>>>(mapStr2VecVecYe);
     freeResource<map<string, vector<int>>>(mapStr2VecBl);
+    freeResource<string>(blueStr);
+    return;
+}
+
+void DALETOU_C::getTheWholeData(set<vector<int>> &setVec)
+{
+    vector<int> oriVec{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+                        11,12,13,14,15,16,17,18,19,20,
+                        21,22,23,24,25,26,27,28,29,30,
+                        31,32,33,34,35};//
+	vector<int> resVec = vector<int>(5, 0);
+
+    freeResource<set<vector<int>>>(setVec);
+	arrange::recursion(oriVec, resVec, 0, 0, static_cast<int>(resVec.size()), setVec);
+	printf("setVec.size=%ld\r\n", setVec.size());
+
+    freeResource<vector<int>>(oriVec);
+    freeResource<vector<int>>(resVec);
     return;
 }
 

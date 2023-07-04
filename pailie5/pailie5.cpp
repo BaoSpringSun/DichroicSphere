@@ -1,3 +1,6 @@
+/**
+ * 较低概率，也是很难统计推测出结果~
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
@@ -23,7 +26,7 @@
 using namespace std;
 
 #define     SELECT_DATE_START                               "00001"
-#define     SELECT_DATE_END                                 "23173"
+#define     SELECT_DATE_END                                 "23175"
 
 __attribute__((unused)) static bool defineCmpRule(const pair<int, vector<int>> &a,
 						  const pair<int, vector<int>> &b)
@@ -93,8 +96,8 @@ void PAILIE5_C::operateStart()
 {
     // checkDatasByTenThousands();
     // checkDatasByThousands();
-    // checkDatasByHundreds();
-    checkDatasByTens();
+    checkDatasByHundreds();
+    // checkDatasByTens();
     return;
 }
 
@@ -123,7 +126,7 @@ void PAILIE5_C::printVecPairIntMapVec(const vector<pair<int, vector<int>>> &vecP
     printf("----------------------------\r\n");
     for(const auto &elemPair : vecPairInt2Int)
     {
-        printf("[%d]:%d\r\n", elemPair.first, elemPair.second);
+        printf("\t%d (个) [%d]\r\n", elemPair.second, elemPair.first);
     }
     printf("----------------------------\r\n");
 
@@ -135,13 +138,13 @@ void PAILIE5_C::printVecPairIntMapVec(const vector<pair<int, vector<int>>> &vecP
 
 void PAILIE5_C::printIntMapVec(const map<int, vector<int>> &intMapVec, unsigned int step)
 {
-    vector<pair<int, vector<int>>>vecPairIntMapVec(intMapVec.begin(), intMapVec.end());
+    vector<pair<int, vector<int>>> vecPairIntMapVec(intMapVec.begin(), intMapVec.end());
 	sort(vecPairIntMapVec.begin(), vecPairIntMapVec.end(), defineCmpRule);
 
     printf("****************************\r\n");
     for(const auto &pairElem : vecPairIntMapVec)
     {
-        printf("%5d:\t%ld\r\n", pairElem.first*step, pairElem.second.size());
+        printf("\t%5d:\t[%ld]\r\n", pairElem.first*step, pairElem.second.size());
     }
     printf("****************************\r\n");
     printVecPairIntMapVec(vecPairIntMapVec);

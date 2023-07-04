@@ -654,6 +654,10 @@ bool sqlite_tb::SelectDataByDate(const string &dateStart, const string &dateEnd,
     {
         sqlcmd = "select yellow1,yellow2,yellow3,yellow4,yellow5,blue1,blue2 from tbldatas";
     }
+    else if(vecElemsNum == 8)
+    {
+        sqlcmd = "select red1,red2,red3,red4,red5,red6,blue1 from tbldatas";
+    }
     else
     {
         printf("the input paras vecElemsNum is wrong:%d\r\n", vecElemsNum);

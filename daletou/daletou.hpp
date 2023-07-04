@@ -26,11 +26,11 @@ private:
     void initVec2Vec(const string &dateStart, const string &dateEnd);
     void initDatas(const vector<vector<int>> &vec2Vec);
 template<typename T>
-    void getTheMultiDatas(const vector<vector<int>> &datas, const T &units);
-    void printIntMapVec(const map<int, vector<int>> &intMapVec, unsigned int step);
-    void printVecPairIntMapVec(const vector<pair<int, vector<int>>> &vecPairIntMapVec);
+    void getTheMultiDatas(const vector<vector<int>> &datas, const T &units, bool yesNo = false);
     bool checkVecIsInVecVec(const vector<int> &vecVec, const vector<int> &vec);
     bool checkVecIsInVecVec(const vector<vector<int>> &vecVec, const vector<int> &vec);
+    void printVecPairIntMapVec(const vector<pair<string, int>> &vecPairStr2Int);
+    void getTheWholeData(set<vector<int>> &setVec);
 
 private:
     /**
