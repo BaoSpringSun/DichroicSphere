@@ -19,11 +19,133 @@
 #include "observer.hpp"
 #include "subserver.hpp"
 #include "zmq.hpp"
+#include "demo.hpp"
 #include "daletou.hpp"
+
 using namespace std;
 
 #define     SELECT_DATE_START                               "00001"
 #define     SELECT_DATE_END                                 "23075"
+
+#define     YE_BLOCK_DIR            "./daletou/yeblock/"
+#define     YE_BLOCK_FILE_BASE      YE_BLOCK_DIR "yeBlock"
+
+__attribute__((unused)) static bool exists_test2(const std::string& name)
+{
+    return ( access( name.c_str(), F_OK ) != -1 );
+}
+
+template<typename T>
+__attribute__((unused)) static void creatVecVecResult(const T &vecVec, const char* dbname, const unsigned int bingoNums)
+{
+	const char* sqlVec6Cmd = "create table if not exists tbldatas("
+                            "red1 int not null default 0,red2 int not null default 0,red3 int not null default 0,"
+                            "red4 int not null default 0,red5 int not null default 0,red6 int not null default 0,"
+                            "UNIQUE(red1, red2, red3, red4, red5, red6));";
+
+	const char* sqlVec10Cmd = "create table if not exists tbldatas("
+                            "red1 int not null default 0,red2 int not null default 0,red3 int not null default 0,"
+                            "red4 int not null default 0,red5 int not null default 0,red6 int not null default 0,"
+							"red7 int not null default 0,red8 int not null default 0,red9 int not null default 0,red10 int not null default 0,"
+                            "UNIQUE(red1, red2, red3, red4, red5, red6, red7, red8, red9, red10));";
+
+	const char* sqlVec7Cmd = "create table if not exists tbldatas("
+                            "red1 int not null default 0,red2 int not null default 0,red3 int not null default 0,"
+                            "red4 int not null default 0,red5 int not null default 0,red6 int not null default 0,"
+							"red7 int not null default 0,"
+                            "UNIQUE(red1, red2, red3, red4, red5, red6, red7));";
+
+	const char* sqlVec5Cmd = "create table if not exists tbldatas("
+                            "yellow1 int not null default 0,yellow2 int not null default 0,yellow3 int not null default 0,"
+                            "yellow4 int not null default 0,yellow5 int not null default 0,"
+                            "UNIQUE(yellow1, yellow2, yellow3, yellow4, yellow5));";
+
+	sqlite_tb *sql = nullptr;
+	string datas = "";
+	unsigned int insertIndex = 0;
+	sql = new sqlite_tb(dbname);
+	if(nullptr == sql)
+	{
+		printf("sql is nullptr.\r\n");
+		return;
+	}
+    // 打开数据库，不存在，创建数据库db
+	sql->OpenDB();
+
+	if(bingoNums == 6)
+	{
+		sql->CreateTable(sqlVec6Cmd);
+	}
+	else if(bingoNums == 10)
+	{
+		sql->CreateTable(sqlVec10Cmd);
+	}
+	else if(bingoNums == 7)
+	{
+		sql->CreateTable(sqlVec7Cmd);
+	}
+	else if(bingoNums == 5)
+	{
+		sql->CreateTable(sqlVec5Cmd);
+	}
+	else
+	{
+		printf("error: the input para bingoNums is error~%d\r\n", bingoNums);
+		sql->CloseDB();
+		delete sql;
+		sql = nullptr;
+		return;
+	}
+
+
+	// printf("vecVec.size=%ld\r\n", vecVec.size());
+	if(vecVec.size() <= 0)
+	{
+		printf("vecVec.size()=0~\r\n");
+		sql->CloseDB();
+		delete sql;
+		sql = nullptr;
+		return;
+	}
+	for(const auto &elemVec:vecVec)
+	{
+		string elemDatas = "(";
+		for(const auto &elem:elemVec)
+		{
+			elemDatas += arrange::NumberToString<int>(elem) + ",";
+		}
+		elemDatas = elemDatas.substr(0, elemDatas.length()-1);//去掉“,”
+		elemDatas = elemDatas + ")";
+
+		if(insertIndex < ONCE_INSERT_MAX_ITERM)
+        {
+            insertIndex++;
+            datas = datas + elemDatas + ",";
+        }
+        else
+        {
+            datas = datas + elemDatas + ";";
+            sql->InsertData(datas);
+            insertIndex = 0;
+            datas = "";
+        }
+	}
+
+	if(false == datas.empty())
+    {
+        datas = datas.substr(0, datas.length()-1) + ";";//去掉“,” 加“;”
+        sql->InsertData(datas);
+        insertIndex = 0;
+        datas = "";
+    }
+
+	sql->SelectGetTotalRows();
+
+	sql->CloseDB();
+	delete sql;
+	sql = nullptr;
+	return;
+}
 
 __attribute__((unused)) static bool defineCmpRule(const pair<int, vector<int>> &a,
 						  const pair<int, vector<int>> &b)
@@ -111,6 +233,10 @@ DALETOU_C::~DALETOU_C()
 
 void DALETOU_C::init()
 {
+    if(!exists_test2(YE_BLOCK_DIR))
+	{
+		system("mkdir " YE_BLOCK_DIR " -p");
+	}
     daletouInitSqlData();
     initVec2Vec(SELECT_DATE_START, SELECT_DATE_END);
     return;
@@ -254,7 +380,7 @@ bool DALETOU_C::checkVecIsInVecVec(const vector<vector<int>> &vecVec, const vect
 void DALETOU_C::initDatas(const vector<vector<int>> &vec2Vec)
 {
     string blueStr = "";
-    string yellowStr = "yeBlock";
+    string yellowStr = YE_BLOCK_FILE_BASE;
     int operaIndex = 0;
     vector<vector<int>> vecVecBlock = vector<vector<int>>();
     set<vector<int>> setVecCheckYe = set<vector<int>>();
@@ -282,6 +408,7 @@ void DALETOU_C::initDatas(const vector<vector<int>> &vec2Vec)
         {
             operaIndex++;
             mapStr2VecVecYe.emplace(yellowStr+to_string(operaIndex), vecVecBlock);
+            // creatVecVecResult<vector<vector<int>>>(vecVecBlock, (yellowStr+to_string(operaIndex)).c_str(), 5);
             freeResource<vector<vector<int>>>(vecVecBlock);
         }
     }

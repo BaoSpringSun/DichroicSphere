@@ -31,6 +31,6 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-	sample_qixingcai_main(argc, argv);
+	sample_pailie3_main(argc, argv);
 	return 0;
 }

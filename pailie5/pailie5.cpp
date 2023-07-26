@@ -26,7 +26,7 @@
 using namespace std;
 
 #define     SELECT_DATE_START                               "00001"
-#define     SELECT_DATE_END                                 "23175"
+#define     SELECT_DATE_END                                 "23180"
 
 __attribute__((unused)) static bool defineCmpRule(const pair<int, vector<int>> &a,
 						  const pair<int, vector<int>> &b)

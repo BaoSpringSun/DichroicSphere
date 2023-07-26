@@ -34,6 +34,9 @@ using namespace std;
 
 #define 	USE_TIMER 	0
 
+template<typename T>
+__attribute__((unused)) static void creatVecVecResult(const T &vecVec, const char* dbname, const unsigned int bingoNums = 6);
+__attribute__((unused)) static bool exists_test2(const std::string& name);
 __attribute__((unused)) static void checkBingoResult();
 __attribute__((unused)) static void checkBingoVec6Datas();
 template<typename T>
@@ -63,8 +66,6 @@ __attribute__((unused)) static void getCoverResultDatas8(const map<vector<int>, 
 __attribute__((unused)) static void getCoverResultDatas9(const map<vector<int>, set<vector<int>>> &LargeDatas, \
 								 const vector<vector<int>> &baseVec6Vec, \
 								 vector<vector<int>> &finalVec6Vec);
-template<typename T>
-__attribute__((unused)) static void creatVecVecResult(const T &vecVec, const char* dbname, const unsigned int bingoNums = 6);
 __attribute__((unused)) static void findBaseSqlData(const vector<vector<int>> &vecBingoVec);
 __attribute__((unused)) static void findBaseSqlData3(const vector<vector<int>> &vecBingoVec);
 __attribute__((unused)) static void findBaseSqlData4(set<vector<int>> &setBaseVec);
@@ -265,6 +266,11 @@ void creatVecVecResult(const T &vecVec, const char* dbname, const unsigned int b
 							"red7 int not null default 0,"
                             "UNIQUE(red1, red2, red3, red4, red5, red6, red7));";
 
+	const char* sqlVec5Cmd = "create table if not exists tbldatas("
+                            "yellow1 int not null default 0,yellow2 int not null default 0,yellow3 int not null default 0,"
+                            "yellow4 int not null default 0,yellow5 int not null default 0,"
+                            "UNIQUE(yellow1, yellow2, yellow3, yellow4, yellow5));";
+
 	sqlite_tb *sql = nullptr;
 	string datas = "";
 	unsigned int insertIndex = 0;
@@ -288,6 +294,10 @@ void creatVecVecResult(const T &vecVec, const char* dbname, const unsigned int b
 	else if(bingoNums == 7)
 	{
 		sql->CreateTable(sqlVec7Cmd);
+	}
+	else if(bingoNums == 5)
+	{
+		sql->CreateTable(sqlVec5Cmd);
 	}
 	else
 	{
@@ -347,7 +357,6 @@ void creatVecVecResult(const T &vecVec, const char* dbname, const unsigned int b
 	sql = nullptr;
 	return;
 }
-
 
 
 int sample_demo_main(int argc, char** argv)
@@ -2520,7 +2529,7 @@ bool checkELemIsInVec(const T &data, const vector<T> &vec)
 
 
 template<typename T>
-bool findElemIsInVec(const T &elem, const vector<T> &vec)
+static bool findElemIsInVec(const T &elem, const vector<T> &vec)
 {
 	/**
 	 * 不用事先进行sort
