@@ -4,13 +4,14 @@
 #include <string.h>
 #include <string>
 #include <vector>
-#include<sstream>
+#include <sstream>
+#include <algorithm>
 #include "arrange.hpp"
 
 
 bool arrange::mTimeOnOff = false;
 struct timeval arrange::mTv = {0};
-atomic<bool> arrange::mUsed = false;
+atomic<bool> arrange::mUsed(false);
 
 arrange::arrange(const char* dbFile, const vector<int> oriVec, const int size)
     :mDatas("")
@@ -307,7 +308,7 @@ void arrange::recursion( const vector<int> &oriVec,
          * 选用vector是因为vector的insert操作比较高效，但是sort比较耗时
          * 为了提升递归循环的效率，重新排序可以放到外面，因为sort操作比较耗时
         */
-        std::sort(result.begin(), result.end());
+        sort(result.begin(), result.end());
 
         resVecVec.push_back(result);
         // printf("resVecVec.size=%ld\r\n", resVecVec.size());

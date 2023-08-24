@@ -27,17 +27,30 @@ using namespace std;
 
 #define         SELECT_DATA_THRESHOLD              20
 #if(DATA_KIND_IS == PAILIE3_DATA)
-    #define     SELECT_DATE_START                               "00001"
-    #define     SELECT_DATE_END                                 "23001"
+    #define     SELECT_DATE_START                               "04021"
+    #define     SELECT_DATE_END                                 "23165"//"23001"
     #define     SELECT_DATE_NOW                                 "23195"
 #else//->FUCAI3D_DATA
-    #define     SELECT_DATE_START                               "0000001"
-    #define     SELECT_DATE_END                                 "2020175"
+    #define     SELECT_DATE_START                               "2004021"
+    #define     SELECT_DATE_END                                 "2023165"
     #define     SELECT_DATE_NOW                                 "2023195"
 #endif
 
-__attribute__((unused)) static bool defineCmpRule(const pair<int, vector<int>> &a,
-						  const pair<int, vector<int>> &b)
+__attribute__((unused)) static bool selfDefineSort4(const pair<int, vector<int>> &a,
+						                          const pair<int, vector<int>> &b)
+{
+	if(a.second.size() != b.second.size())
+	{
+		return a.second.size() > b.second.size();
+	}
+	else
+	{
+		return a.first < b.first;
+	}
+}
+
+__attribute__((unused)) static bool selfDefineSort5(const pair<int, vector<vector<int>>> &a,
+						                          const pair<int, vector<vector<int>>> &b)
 {
 	if(a.second.size() != b.second.size())
 	{
@@ -54,9 +67,19 @@ __attribute__((unused)) static bool toUp(const int &a, const int &b)
     return a < b;
 }
 
+__attribute__((unused)) static bool toDown(const int &a, const int &b)
+{
+    return a > b;
+}
+
 __attribute__((unused)) static bool vecVecToUp(const vector<int> &a, const vector<int> &b)
 {
     return a[0] < b[0];
+}
+
+__attribute__((unused)) static bool vecVecToDown(const vector<int> &a, const vector<int> &b)
+{
+    return a[0] > b[0];
 }
 
 __attribute__((unused)) static bool sortVec_ToDown(const pair<int, int> &a, const pair<int, int> &b)
@@ -89,6 +112,19 @@ __attribute__((unused)) static bool selfDefineSort2(const pair<vector<int>, vect
     return (a.second.size() > b.second.size());
 }
 
+__attribute__((unused)) static bool selfDefineSort3(const pair<int, vector<vector<int>>> &a,
+						                            const pair<int, vector<vector<int>>> &b)
+{
+	if(a.second.size() != b.second.size())
+	{
+		return a.second.size() > b.second.size();
+	}
+	else
+	{
+		return a.first > b.first;
+	}
+}
+
 int sample_pailie3_main(int argc, char** argv)
 {
     PAILIE3_C* pailie3 = new PAILIE3_C();
@@ -103,19 +139,6 @@ int sample_pailie3_main(int argc, char** argv)
     return 0;
 }
 
-__attribute__((unused)) static bool selfDefineSort3(const pair<int, vector<vector<int>>> &a,
-						                            const pair<int, vector<vector<int>>> &b)
-{
-	if(a.second.size() != b.second.size())
-	{
-		return a.second.size() > b.second.size();
-	}
-	else
-	{
-		return a.first > b.first;
-	}
-}
-
 PAILIE3_C::PAILIE3_C()
     :mVec2Vec(vector<vector<int>>())
     ,mDatas(vector<int>())
@@ -123,6 +146,11 @@ PAILIE3_C::PAILIE3_C()
     ,mDatasUntilNow(vector<vector<int>>())
     ,mIndex(0)
     ,mSpendMoney(0)
+    ,mIndexVec(vector<int>())
+    ,mBaseVec(vector<int>())
+    ,mIncrease(0)
+    ,mBingoNum(0)
+    ,mBaseVecVec(vector<vector<int>>())
 {
 
 }
@@ -133,6 +161,9 @@ PAILIE3_C::~PAILIE3_C()
     freeResource<vector<int>>(mDatas);
     freeResource<vector<vector<int>>>(mIndexVecVec);
     freeResource<vector<vector<int>>>(mDatasUntilNow);
+    freeResource<vector<int>>(mIndexVec);
+    freeResource<vector<int>>(mBaseVec);
+    freeResource<vector<vector<int>>>(mBaseVecVec);
 }
 
 void PAILIE3_C::init()
@@ -140,14 +171,18 @@ void PAILIE3_C::init()
     pailie3InitSqlData();
     genVecVecDatasUntilNow(SELECT_DATE_START, SELECT_DATE_NOW);
     initVec2Vec(SELECT_DATE_START, SELECT_DATE_END);
+
     return;
 }
 
 void PAILIE3_C::operateStart()
 {
-    // checkDatasByUnit();
+    checkDatasByUnit();
     // checkDatasByTens();
-    zuHeXuan3();
+    // zuHeXuan3();
+    // zhiXuan();
+    // zuHeXuan6();
+    // checkDatasPianDuan();
     return;
 }
 
@@ -162,7 +197,9 @@ void PAILIE3_C::loopOperate(const string &dateEnd)
     }
     freeResource<string>(strDateNow);
     initVec2Vec(SELECT_DATE_START, dateEnd);
-    zuHeXuan3();
+    // zuHeXuan3();
+    // zhiXuan();
+    zuHeXuan6();
     return;
 }
 
@@ -204,7 +241,7 @@ void PAILIE3_C::printVecPairIntMapVec(const vector<pair<int, vector<int>>> &vecP
 void PAILIE3_C::printIntMapVec(const map<int, vector<int>> &intMapVec, unsigned int step)
 {
     vector<pair<int, vector<int>>>vecPairIntMapVec(intMapVec.begin(), intMapVec.end());
-	sort(vecPairIntMapVec.begin(), vecPairIntMapVec.end(), defineCmpRule);
+	sort(vecPairIntMapVec.begin(), vecPairIntMapVec.end(), selfDefineSort4);
 
     printf("****************************\r\n");
     for(const auto &pairElem : vecPairIntMapVec)
@@ -359,6 +396,140 @@ void PAILIE3_C::initDatas(const vector<vector<int>> &vec2Vec)
     return;
 }
 
+void PAILIE3_C::checkDatasPianDuan(const vector<int> &vecDatas, int length)
+{
+    int index1 = 0, index2 = 0;
+    vector<int>::const_iterator itor1 = vecDatas.begin();
+    for(; (itor1+length)!=vecDatas.end(); itor1++,index1++)
+    {
+        vector<int> tmp1(itor1, itor1+length);
+        index2 = 0;
+        vector<int>::const_iterator itor2 = vecDatas.begin();
+        for(; (itor2+length)!=vecDatas.end(); itor2++,index2++)
+        {
+            vector<int> tmp2(itor2, itor2+length);
+            if((tmp1 == tmp2)&&(index1 < index2))
+            {
+                printf("找到相同片段(length=%d)[%d]=[%d],间隔:%d\r\n", length, index1, index2, (index2-index1));
+            }
+            freeResource<vector<int>>(tmp2);
+        }
+        freeResource<vector<int>>(tmp1);
+    }
+
+    return;
+}
+
+void PAILIE3_C::checkDatasPianDuan(const vector<int> &vecDatas1, const vector<int> &vecDatas2)
+{
+    int length = 6;
+    int index1 = 0, index2 = 0;
+    vector<int>::const_iterator itor1 = vecDatas1.begin();
+    for(; (itor1+length)!=vecDatas1.end(); itor1++,index1++)
+    {
+        vector<int> tmp1(itor1, itor1+length);
+        index2 = 0;
+        vector<int>::const_iterator itor2 = vecDatas2.begin();
+        for(; (itor2+length)!=vecDatas2.end(); itor2++,index2++)
+        {
+            vector<int> tmp2(itor2, itor2+length);
+            if((tmp1 == tmp2)&&(index1 < index2))
+            {
+                printf("找到相同片段(length=%d)[%d]=[%d],间隔:%d\r\n", length, index1, index2, (index2-index1));
+            }
+            freeResource<vector<int>>(tmp2);
+        }
+        freeResource<vector<int>>(tmp1);
+    }
+
+    return;
+}
+
+
+void PAILIE3_C::analysiseVecData(const vector<int> &vecDatas)
+{
+    vector<pair<int,int>> tmp = vector<pair<int,int>>();
+    int checkRet = 0;
+    printf("***********************************\r\n");
+    for(int i=0;i<10;i++)
+    {
+        int count = 0;
+        for(const auto &elem : vecDatas)
+        {
+            if(elem == i)
+            {
+                count++;
+            }
+        }
+        tmp.push_back(make_pair(i, count));
+        printf("\t统计[%d]有%d个~\r\n", i, count);
+    }
+
+    sort(tmp.begin(), tmp.end(), sortVec_ToDown);
+    for(const auto &elemPair : tmp)
+    {
+        printf("\t[%d]:%d\r\n", elemPair.first, elemPair.second);
+        checkRet += elemPair.second;
+    }
+    freeResource<vector<pair<int,int>>>(tmp);
+    printf("***********************************%d\r\n", checkRet);
+    return;
+}
+
+/**
+ * bai : data/100;
+ * shi : (data/10)%10
+ * ge : data%10
+*/
+void PAILIE3_C::checkDatasPianDuan()
+{
+    vector<int> geVec = vector<int>();
+    vector<int> shiVec = vector<int>();
+    vector<int> baiVec = vector<int>();
+
+    for(const auto &elem : mDatas)
+    {
+        geVec.push_back(elem%10);
+        shiVec.push_back((elem/10)%10);
+        baiVec.push_back(elem/100);
+    }
+    printf("checkDatasPianDuan(mDatas)\r\n");
+    checkDatasPianDuan(mDatas, 2);
+    printf("\r\n");
+    printf("checkDatasPianDuan(geVec)\r\n");
+    checkDatasPianDuan(geVec);
+    printf("\r\n");
+    printf("checkDatasPianDuan(shiVec)\r\n");
+    checkDatasPianDuan(shiVec);
+    printf("\r\n");
+    printf("checkDatasPianDuan(baiVec)\r\n");
+    checkDatasPianDuan(baiVec);
+    printf("\r\n");
+    printf("checkDatasPianDuan(geVec, shiVec)\r\n");
+    checkDatasPianDuan(geVec, shiVec);
+    printf("\r\n");
+    printf("checkDatasPianDuan(geVec, baiVec)\r\n");
+    checkDatasPianDuan(geVec, baiVec);
+    printf("\r\n");
+    printf("checkDatasPianDuan(shiVec, baiVec)\r\n");
+    checkDatasPianDuan(shiVec, baiVec);
+    printf("\r\n");
+    printf("analysiseVecData(geVec)\r\n");
+    analysiseVecData(geVec);
+    printf("\r\n");
+    printf("analysiseVecData(shiVec)\r\n");
+    analysiseVecData(shiVec);
+    printf("\r\n");
+    printf("analysiseVecData(baiVec)\r\n");
+    analysiseVecData(baiVec);
+
+    freeResource<vector<int>>(geVec);
+    freeResource<vector<int>>(shiVec);
+    freeResource<vector<int>>(baiVec);
+
+    return;
+}
+
 void PAILIE3_C::genVecVecDatasUntilNow(const string &dateStart, const string &dateEnd)
 {
     sqlite_tb *sql = nullptr;
@@ -457,11 +628,281 @@ void PAILIE3_C::pailie3InitSqlData()
 	return;
 }
 
+template<typename T>
+bool PAILIE3_C::checkTheElemIsInTheVec(const T &elem, const vector<T> &vec)
+{
+    if(0 == vec.size())
+    {
+        return false;
+    }
+
+    auto itor = find(vec.begin(), vec.end(), elem);
+    if(itor != vec.end())
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+void PAILIE3_C::zhiXuanOrderBaseData(const vector<vector<int>> &vec2Vec, vector<int> &baseVec)
+{
+    freeResource<vector<int>>(baseVec);
+    for(const auto &elemVec : vec2Vec)
+    {
+        if(elemVec.size() >= 2)
+        {
+            bool ret = checkTheElemIsInTheVec<int>(elemVec[1], baseVec);
+            if(false == ret)
+            {//不在
+                baseVec.push_back(elemVec[1]);
+            }
+            if(baseVec.size() >= 1000)
+            {
+                break;
+            }
+        }
+    }
+    // printf("根据最新的期数号码(有%ld个)得到最新的基数的排序为:\r\n", baseVec.size());
+    // int ic = 0;
+    // for(const auto &elem : baseVec)
+    // {
+    //     printf("\t(%d)", elem);
+    //     if(ic++ > 8)
+    //     {
+    //         ic = 0;
+    //         printf("\r\n");
+    //     }
+    // }
+    // printf("\r\n");
+
+    return;
+}
+
+void PAILIE3_C::zhiXuanTongJiJieGuoShengChengMap(const vector<vector<int>> &vec2Vec,
+                                          const vector<int> &baseVec,
+                                          map<int, vector<vector<int>>> &mapRet)
+{
+    for(const auto &elem : baseVec)
+    {
+        vector<vector<int>> tmp = vector<vector<int>>();
+        for(const auto &elemVec : vec2Vec)
+        {
+            if(elemVec.size() >= 2)
+            {
+                if(elem == elemVec[1])
+                {
+                    tmp.push_back(elemVec);
+                }
+            }
+        }
+        sort(tmp.begin(), tmp.end());
+        mapRet.emplace(elem, tmp);
+        freeResource<vector<vector<int>>>(tmp);
+    }
+    return;
+}
+
+void PAILIE3_C::zhiXuanPrintfTongJiJieGuo(const map<int, vector<vector<int>>> &mapRet)
+{
+    vector<pair<int, vector<vector<int>>>> vecPair(mapRet.begin(), mapRet.end());
+    set<int> cishuSet = set<int>();
+    map<int, vector<int>> mapIntToVec = map<int, vector<int>>();
+    sort(vecPair.begin(), vecPair.end(), selfDefineSort3);
+    for(const auto &elemPair : vecPair)
+    {
+        set<int> intervalSet = set<int>();
+        int index = 0;
+        // printf("  (%d)出现了[%ld]次:\r\n", elemPair.first, elemPair.second.size());
+        cishuSet.insert(static_cast<int>(elemPair.second.size()));
+        for(const auto &elemVec : elemPair.second)
+        {
+            if(index)
+            {
+                intervalSet.insert(elemVec[0]-index);
+                index = elemVec[0];
+            }
+            else
+            {
+                index = elemVec[0];
+            }
+
+            // printf("\t索引");
+            // for(const auto &elem : elemVec)
+            // {
+            //     printf("%d_", elem);
+            // }
+            // printf("\r\n");
+        }
+
+        // printf("\t间隔值分别为:");
+        // for(const auto &elem : intervalSet)
+        // {
+        //     printf("%d ", elem);
+        // }
+        // printf("\r\n");
+        freeResource<set<int>>(intervalSet);
+    }
+
+    /**
+     * 根据出现的次数判断结果
+    */
+    for(const auto &cishu : cishuSet)
+    {
+        vector<int> tmp = vector<int>();
+        for(const auto &elemPair : vecPair)
+        {
+            if(cishu == static_cast<int>(elemPair.second.size()))
+            {
+                tmp.push_back(elemPair.first);
+            }
+        }
+        mapIntToVec.emplace(cishu, tmp);
+        freeResource<vector<int>>(tmp);
+    }
+
+    vector<pair<int, vector<int>>> vecPairIntToVec(mapIntToVec.begin(), mapIntToVec.end());
+    sort(vecPairIntToVec.begin(), vecPairIntToVec.end(), selfDefineSort4);
+    // for(const auto &elemPair : vecPairIntToVec)
+    // {
+    //     __attribute__((unused)) int i = 0;
+    //     printf("出现了[%d]次的有%ld个:  \r\n", elemPair.first, elemPair.second.size());
+    //     for(const auto &elem : elemPair.second)
+    //     {
+    //         printf("\t(%d)", elem);
+    //         if(++i > 9)
+    //         {
+    //             i = 0;
+    //             printf("\r\n");
+    //         }
+    //     }
+    //     printf("\r\n");
+    // }
+
+    /**
+     * 得出 mIndexVec
+    */
+    freeResource<vector<int>>(mIndexVec);
+    //->经过排序后第一个值就是目标值
+    mIndexVec.insert(mIndexVec.end(), vecPairIntToVec[0].second.begin(), vecPairIntToVec[0].second.end());
+    // mIndexVec.insert(mIndexVec.end(), vecPairIntToVec[1].second.begin(), vecPairIntToVec[1].second.end());
+    // mIndexVec.insert(mIndexVec.end(), vecPairIntToVec[2].second.begin(), vecPairIntToVec[2].second.end());
+    // mIndexVec.insert(mIndexVec.end(), vecPairIntToVec[3].second.begin(), vecPairIntToVec[3].second.end());
+    // mIndexVec.insert(mIndexVec.end(), vecPairIntToVec[4].second.begin(), vecPairIntToVec[4].second.end());
+    // mIndexVec.insert(mIndexVec.end(), vecPairIntToVec[5].second.begin(), vecPairIntToVec[5].second.end());
+    printf("mIndexVec.size=%ld\r\n", mIndexVec.size());
+    vector<int> tmp(mBaseVec.begin(), mBaseVec.begin()+mIncrease+200);
+    for(const auto &elem : tmp)
+    {
+        auto itor = find(mIndexVec.begin(), mIndexVec.end(), elem);
+        if(itor != mIndexVec.end())
+        {
+            mIndexVec.erase(itor);
+        }
+    }
+
+    sort(mIndexVec.begin(), mIndexVec.end(), toDown);
+    // printf("所以我选择的号码有:\r\n");
+    // int ic = 0;
+    // for(const auto &elem : mIndexVec)
+    // {
+    //     printf("\t(%d)", elem);
+    //     if(ic++ > 8)
+    //     {
+    //         ic = 0;
+    //         printf("\r\n");
+    //     }
+    // }
+    // printf("\r\n");
+
+    freeResource<vector<int>>(tmp);
+    freeResource<vector<pair<int, vector<int>>>>(vecPairIntToVec);
+    freeResource<vector<pair<int, vector<vector<int>>>>>(vecPair);
+    freeResource<set<int>>(cishuSet);
+    freeResource<map<int, vector<int>>>(mapIntToVec);
+    return;
+}
+
+/**
+ * 直选操作
+*/
+void PAILIE3_C::zhiXuanGetNewIndexForLoop()
+{
+    printf("mIndexVec.size=%ld, mIndex=%ld\r\n", mIndexVec.size(), mIndex);
+    if(mIndex < static_cast<long>(mDatasUntilNow.size()))
+    {
+        long changeValue = mIndex;
+        long spendMoney = 0;
+        int bingo = 0;
+        for( ;mIndex<static_cast<long>(mDatasUntilNow.size()); mIndex++)
+        {
+            if(mDatasUntilNow[mIndex].size() >= 2)
+            {
+                if(checkTheElemIsInTheVec<int>(mDatasUntilNow[mIndex][1], mIndexVec))
+                {
+                    printf("中了的号码(%d)的mIndex值为%ld\r\n", mDatasUntilNow[mIndex][1], mIndex);
+                    mBingoNum++;
+                    bingo = 1;
+                    break;
+                }
+            }
+        }
+        printf("mIndex=%ld\r\n", mIndex);
+        changeValue = mIndex - changeValue;
+        mIncrease = static_cast<int>(changeValue);
+        spendMoney = mIndexVec.size()*2*changeValue;
+        mSpendMoney = mSpendMoney - spendMoney + 1040*bingo;
+        printf("此次购买彩票[%d]次数花费%ld元,截止目前盈收%ld元，一共中了%d个号码.\r\n", mIncrease, spendMoney, mSpendMoney, mBingoNum);
+        if(mIndex < static_cast<long>(mDatasUntilNow.size()))
+        {
+            loopOperate(to_string(mDatasUntilNow[mIndex][0]));
+        }
+    }
+    return;
+}
+
+void PAILIE3_C::zhiXuan()
+{
+    int index = 1;
+    vector<vector<int>> vec2Vec = vector<vector<int>>();
+    map<int, vector<vector<int>>> mapRet = map<int, vector<vector<int>>>();
+
+    /**
+     * 生成 vec2Vec   vec2Vec里面的元素是(index, data);index是为了计算间隔值
+    */
+    sort(mVec2Vec.begin(), mVec2Vec.end(), selfDefineSort);
+    for(const auto &elemVec2:mVec2Vec)
+    {
+        vector<int> tmp = vector<int>();
+        if(elemVec2.size() < 2)
+        {
+            printf("error[%d]:the input paras vec2Vec is wrong~\r\n", __LINE__);
+            break;
+        }
+        tmp.push_back(index++);
+        tmp.push_back(elemVec2[1]);
+        vec2Vec.push_back(tmp);
+        freeResource<vector<int>>(tmp);
+    }
+    printf("index=%d, vec2Vec.size=%ld\r\n", index, vec2Vec.size());
+
+    zhiXuanOrderBaseData(vec2Vec, mBaseVec);
+    zhiXuanTongJiJieGuoShengChengMap(vec2Vec, mBaseVec, mapRet);
+    zhiXuanPrintfTongJiJieGuo(mapRet);
+    zhiXuanGetNewIndexForLoop();
+
+    freeResource<vector<vector<int>>>(vec2Vec);
+    freeResource<map<int, vector<vector<int>>>>(mapRet);
+    return;
+}
+
 
 /**
  * 从0-9任取两个不同数字的组合的集合，
  * 1，得出每个组合所出现的相邻的次数之间的间隔的集合
- * 2，得出每个组合所出现的次数和最小值
+ * 2，得出每个组合所出现的次数之间的间隔的集合中的最小值
 */
 void PAILIE3_C::zuHeXuan3()
 {
@@ -490,10 +931,10 @@ void PAILIE3_C::zuHeXuan3()
 
 	arrange::recursion(Vec10Ori, resVec, 0, 0, static_cast<int>(resVec.size()), resVec2Vec);
     printf("resVec2Vec.size=%ld\r\n", resVec2Vec.size());
-    getMapRet(vec2Vec, resVec2Vec, mapRet);
-    printfMapRet(mapRet);
-    getTheCurrentVec2Order(vec2Vec);
-    getNewIndexForLoop();
+    zuHeXuan3GetMapRet(vec2Vec, resVec2Vec, mapRet);
+    zuHeXuan3PrintfMapRet(mapRet);
+    zuHeXuan3GetTheCurrentVec2Order(vec2Vec);
+    zuHeXuan3GetNewIndexForLoop();
 
     freeResource<vector<int>>(resVec);
     freeResource<vector<int>>(Vec10Ori);
@@ -502,7 +943,7 @@ void PAILIE3_C::zuHeXuan3()
     freeResource<map<vector<int>, vector<vector<int>>>>(mapRet);
 }
 
-void PAILIE3_C::getNewIndexForLoop()
+void PAILIE3_C::zuHeXuan3GetNewIndexForLoop()
 {
     printf("mIndexVecVec.size=%ld, mIndex=%ld\r\n", mIndexVecVec.size(), mIndex);
     if(mIndex < static_cast<long>(mDatasUntilNow.size()))
@@ -567,7 +1008,7 @@ bool PAILIE3_C::checkTheVec2IsInTheVec2Vec(const vector<int> &vec2, const vector
     return ret;
 }
 
-void PAILIE3_C::getTheCurrentVec2Order(const vector<vector<int>> &vec2Vec)
+void PAILIE3_C::zuHeXuan3GetTheCurrentVec2Order(const vector<vector<int>> &vec2Vec)
 {
     int index = 0;
     vector<vector<int>> vec2VecRet = vector<vector<int>>();
@@ -614,6 +1055,15 @@ void PAILIE3_C::getTheCurrentVec2Order(const vector<vector<int>> &vec2Vec)
         // printf("\r\n");
     }
 
+    printf("mIndexVecVec.size=%ld\r\n", mIndexVecVec.size());
+
+    if(mIndexVecVec.size() > SELECT_DATA_THRESHOLD-5)
+    {
+        vector<vector<int>> tmpVecVec(mIndexVecVec.begin(), mIndexVecVec.begin()+(SELECT_DATA_THRESHOLD-5));
+        tmpVecVec.swap(mIndexVecVec);
+        freeResource<vector<vector<int>>>(tmpVecVec);
+    }
+
     // printf("所以我购买的两个数字组合的号码分别是:\r\n");
     // for(const auto &elemVec : mIndexVecVec)
     // {
@@ -631,7 +1081,7 @@ void PAILIE3_C::getTheCurrentVec2Order(const vector<vector<int>> &vec2Vec)
     return;
 }
 
-void PAILIE3_C::printfMapRet(const map<vector<int>, vector<vector<int>>> &mapRet)
+void PAILIE3_C::zuHeXuan3PrintfMapRet(const map<vector<int>, vector<vector<int>>> &mapRet)
 {
     int index = 0;
     vector<pair<vector<int>, vector<vector<int>>>> vecPair(mapRet.begin(), mapRet.end());
@@ -707,19 +1157,20 @@ void PAILIE3_C::printfMapRet(const map<vector<int>, vector<vector<int>>> &mapRet
         //     printf(";");
         // }
         // printf("\r\n");
-        if(mIndexVecVec.size() < SELECT_DATA_THRESHOLD)
+        // if(mIndexVecVec.size() < SELECT_DATA_THRESHOLD+10)
         {
             mIndexVecVec.insert(mIndexVecVec.end(), elemPair.second.begin(), elemPair.second.end());
         }
     }
 
+    freeResource<set<int>>(setCiShu);
     freeResource<vector<pair<int, vector<vector<int>>>>>(vecPair2);
     freeResource<map<int, vector<vector<int>>>>(intMapVec);
     freeResource<vector<pair<vector<int>, vector<vector<int>>>>>(vecPair);
     return;
 }
 
-void PAILIE3_C::getMapRet(const vector<vector<int>> &vec2Vec,
+void PAILIE3_C::zuHeXuan3GetMapRet(const vector<vector<int>> &vec2Vec,
                           const vector<vector<int>> &resVec2Vec,
                           map<vector<int>, vector<vector<int>>> &mapRet)
 {
@@ -791,4 +1242,352 @@ bool PAILIE3_C::checkElemsIsBeLong(const int &data, const vector<int> &resVec)
     }
     freeResource<set<int>>(splitNums);
     return ret;
+}
+
+
+/**
+ * 组合选 6
+*/
+void PAILIE3_C::zuHeXuan6()
+{
+    int index = 1;
+    vector<vector<int>> vec2Vec = vector<vector<int>>();
+    map<vector<int>, vector<vector<int>>> mapRet = map<vector<int>, vector<vector<int>>>();
+
+    /**
+     * 生成 vec2Vec   vec2Vec里面的元素是(index, data);index是为了计算间隔值
+    */
+    sort(mVec2Vec.begin(), mVec2Vec.end(), selfDefineSort);
+    for(const auto &elemVec2:mVec2Vec)
+    {
+        vector<int> tmp = vector<int>();
+        if(elemVec2.size() < 2)
+        {
+            printf("error[%d]:the input paras vec2Vec is wrong~\r\n", __LINE__);
+            break;
+        }
+        tmp.push_back(index++);
+        tmp.push_back(elemVec2[1]);
+        vec2Vec.push_back(tmp);
+        freeResource<vector<int>>(tmp);
+    }
+    printf("index=%d, vec2Vec.size=%ld\r\n", index, vec2Vec.size());
+
+    zuHeXuan6OrderBaseData(vec2Vec, mBaseVecVec);
+    zuHeXuan6TongJiJieGuoShengChengMap(vec2Vec, mBaseVecVec, mapRet);
+    zuHeXuan6PrintfTongJiJieGuo(mapRet);
+    zuHeXuan6GetNewIndexForLoop();
+
+    freeResource<vector<vector<int>>>(vec2Vec);
+    freeResource<map<vector<int>, vector<vector<int>>>>(mapRet);
+    return;
+}
+
+
+bool PAILIE3_C::zuHeXuan6CheckTheDataIsRight(const int &data, vector<int> &indexVec)
+{
+    bool ret = true;
+    set<int> splitNums = set<int>();
+    splitNums.insert(data/100);
+    splitNums.insert((data/10)%10);
+    splitNums.insert(data%10);
+    if(splitNums.size() == 3)
+    {
+        freeResource<vector<int>>(indexVec);
+        vector<int> tmp(splitNums.begin(), splitNums.end());
+        tmp.swap(indexVec);
+        freeResource<vector<int>>(tmp);
+    }
+    else
+    {
+        ret = false;
+    }
+    freeResource<set<int>>(splitNums);
+    return ret;
+}
+
+void PAILIE3_C::zuHeXuan6OrderBaseData(const vector<vector<int>> &vec2Vec, vector<vector<int>> &baseVecVec)
+{
+    freeResource<vector<vector<int>>>(baseVecVec);
+    for(const auto &elemVec : vec2Vec)
+    {
+        if(elemVec.size() >= 2)
+        {
+            vector<int> indexVec = vector<int>();
+            bool ret = zuHeXuan6CheckTheDataIsRight(elemVec[1], indexVec);
+            if(false != ret)
+            {//符合类型
+                bool ret1 = checkTheElemIsInTheVec<vector<int>>(indexVec, baseVecVec);
+                if(false == ret1)
+                {
+                    baseVecVec.push_back(indexVec);
+                }
+            }
+            freeResource<vector<int>>(indexVec);
+            if(baseVecVec.size() >= 120)
+            {
+                break;
+            }
+        }
+    }
+    printf("根据最新的期数号码(有%ld个)得到最新的基数的排序为:\r\n", baseVecVec.size());
+    int ic = 0;
+    for(const auto &elemVec : baseVecVec)
+    {
+        printf("\t[");
+        for(const auto &elem : elemVec)
+        {
+            printf("%d,", elem);
+        }
+        printf("]");
+        if(ic++ > 3)
+        {
+            printf("\r\n");
+            ic = 0;
+        }
+    }
+    printf("\r\n");
+
+    return;
+}
+
+bool PAILIE3_C::zuHeXuan6CheckTheLeftDataIsBelongRightData(const int &data, const vector<int> &vec)
+{
+    bool ret = true;
+    int bai=0,shi=0,ge=0;
+    bai = data/100;
+    shi = (data/10)%10;
+    ge = data%10;
+    ret &= checkTheElemIsInTheVec<int>(bai, vec);
+    ret &= checkTheElemIsInTheVec<int>(shi, vec);
+    ret &= checkTheElemIsInTheVec<int>(ge, vec);
+    if((ret)&&(bai!=shi)&&(shi!=ge)&&(ge!=bai))
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+void PAILIE3_C::zuHeXuan6TongJiJieGuoShengChengMap(const vector<vector<int>> &vec2Vec,
+                                                   const vector<vector<int>> &baseVecVec,
+                                                   map<vector<int>, vector<vector<int>>> &mapRet)
+{
+    for(const auto &elemVec1 : baseVecVec)
+    {
+        vector<vector<int>> tmp = vector<vector<int>>();
+        for(const auto &elemVec : vec2Vec)
+        {
+            if(elemVec.size() >= 2)
+            {
+                if(zuHeXuan6CheckTheLeftDataIsBelongRightData(elemVec[1], elemVec1))
+                {
+                    tmp.push_back(elemVec);
+                }
+            }
+        }
+        sort(tmp.begin(), tmp.end());
+        mapRet.emplace(elemVec1, tmp);
+        freeResource<vector<vector<int>>>(tmp);
+    }
+    return;
+}
+
+void PAILIE3_C::zuHeXuan6PrintfTongJiJieGuo(const map<vector<int>, vector<vector<int>>> &mapRet)
+{
+    vector<pair<vector<int>, vector<vector<int>>>> vecPair(mapRet.begin(), mapRet.end());
+    set<int> cishuSet = set<int>();
+    map<int, vector<vector<int>>> mapIntToVec = map<int, vector<vector<int>>>();
+    sort(vecPair.begin(), vecPair.end(), selfDefineSort2);
+    for(const auto &elemPair : vecPair)
+    {
+        set<int> intervalSet = set<int>();
+        int index = 0;
+        // printf("(");
+        // for(const auto &elem : elemPair.first)
+        // {
+        //     printf("%d,", elem);
+        // }
+        // printf(")出现了[%ld]次:\r\n", elemPair.second.size());
+        cishuSet.insert(static_cast<int>(elemPair.second.size()));
+        for(const auto &elemVec : elemPair.second)
+        {
+            if(index)
+            {
+                intervalSet.insert(elemVec[0]-index);
+                index = elemVec[0];
+            }
+            else
+            {
+                index = elemVec[0];
+            }
+
+            // printf("\t索引");
+            // for(const auto &elem : elemVec)
+            // {
+            //     printf("%d_", elem);
+            // }
+            // printf("\r\n");
+        }
+
+        // printf("\t间隔值分别为:");
+        // for(const auto &elem : intervalSet)
+        // {
+        //     printf("%d ", elem);
+        // }
+        // printf("\r\n");
+        freeResource<set<int>>(intervalSet);
+    }
+
+    /**
+     * 根据出现的次数判断结果
+    */
+    for(const auto &cishu : cishuSet)
+    {
+        vector<vector<int>> tmp = vector<vector<int>>();
+        for(const auto &elemPair : vecPair)
+        {
+            if(cishu == static_cast<int>(elemPair.second.size()))
+            {
+                tmp.push_back(elemPair.first);
+            }
+        }
+        sort(tmp.begin(), tmp.end());
+        mapIntToVec.emplace(cishu, tmp);
+        freeResource<vector<vector<int>>>(tmp);
+    }
+
+    vector<pair<int, vector<vector<int>>>> vecPairIntToVec(mapIntToVec.begin(), mapIntToVec.end());
+    sort(vecPairIntToVec.begin(), vecPairIntToVec.end(), selfDefineSort5);
+    // for(const auto &elemPair : vecPairIntToVec)
+    // {
+    //     __attribute__((unused)) int ic = 0;
+    //     printf("出现了[%d]次的有%ld个:  \r\n", elemPair.first, elemPair.second.size());
+    //     for(const auto &elemVec : elemPair.second)
+    //     {
+    //         printf("\t[");
+    //         for(const auto &elem : elemVec)
+    //         {
+    //             printf("%d,", elem);
+    //         }
+    //         printf("]");
+    //         if(ic++ > 3)
+    //         {
+    //             ic = 0;
+    //             printf("\r\n");
+    //         }
+    //     }
+    //     printf("\r\n");
+    // }
+
+    /**
+     * 得出 mIndexVecVec
+    */
+    freeResource<vector<vector<int>>>(mIndexVecVec);
+    //->经过排序后第一个值就是目标值
+    // mIndexVecVec.insert(mIndexVecVec.end(), vecPairIntToVec[0].second.begin(), vecPairIntToVec[0].second.end());
+    for(const auto &elemPair : vecPairIntToVec)
+    {
+        mIndexVecVec.insert(mIndexVecVec.end(), elemPair.second.begin(), elemPair.second.end());
+        if(mIndexVecVec.size() > 30)
+        {
+            break;
+        }
+    }
+
+    printf("mIndexVecVec.size=%ld, mIncrease=%d\r\n", mIndexVecVec.size(), mIncrease);
+    vector<vector<int>> tmp(mBaseVecVec.begin(), mBaseVecVec.begin()+ mIncrease+10);
+    for(const auto &elem : tmp)
+    {
+        auto itor = find(mIndexVecVec.begin(), mIndexVecVec.end(), elem);
+        if(itor != mIndexVecVec.end())
+        {
+            mIndexVecVec.erase(itor);
+        }
+    }
+
+    sort(mIndexVecVec.begin(), mIndexVecVec.end(), vecVecToDown);
+    // printf("所以我选择的号码有:\r\n");
+    // int ic = 0;
+    // for(const auto &elemVec : mIndexVecVec)
+    // {
+    //     printf("\t[");
+    //     for(const auto &elem : elemVec)
+    //     {
+    //         printf("%d,", elem);
+    //     }
+    //     printf("]");
+    //     if(ic++ > 3)
+    //     {
+    //         printf("\r\n");
+    //         ic = 0;
+    //     }
+    // }
+    // printf("\r\n");
+
+    freeResource<vector<vector<int>>>(tmp);
+    freeResource<vector<pair<int, vector<vector<int>>>>>(vecPairIntToVec);
+    freeResource<vector<pair<vector<int>, vector<vector<int>>>>>(vecPair);
+    freeResource<set<int>>(cishuSet);
+    freeResource<map<int, vector<vector<int>>>>(mapIntToVec);
+    return;
+}
+
+/**
+ * 直选操作
+*/
+void PAILIE3_C::zuHeXuan6GetNewIndexForLoop()
+{
+    printf("mIndexVecVec.size=%ld, mIndex=%ld\r\n", mIndexVecVec.size(), mIndex);
+    if(mIndex < static_cast<long>(mDatasUntilNow.size()))
+    {
+        long changeValue = mIndex;
+        long spendMoney = 0;
+        int bingo = 0;
+        for( ;mIndex<static_cast<long>(mDatasUntilNow.size()); mIndex++)
+        {
+            if(mDatasUntilNow[mIndex].size() >= 2)
+            {
+                vector<int> indexVec = vector<int>();
+                bool ret = zuHeXuan6CheckTheDataIsRight(mDatasUntilNow[mIndex][1], indexVec);
+                if(false != ret)
+                {//符合类型
+                    bool ret1 = checkTheElemIsInTheVec<vector<int>>(indexVec, mIndexVecVec);
+                    if(false != ret1)
+                    {
+                        printf("中了的号码(%d)的mIndex值为%ld\r\n", mDatasUntilNow[mIndex][1], mIndex);
+                        mBingoNum++;
+                        bingo = 1;
+                        mIndex++;
+                        freeResource<vector<int>>(indexVec);
+                        break;
+                    }
+                }
+                freeResource<vector<int>>(indexVec);
+            }
+        }
+        printf("mIndex=%ld\r\n", mIndex);
+        changeValue = mIndex - changeValue;
+        mIncrease = static_cast<int>(changeValue);
+        if(mIncrease)
+        {
+            // mIndex++;
+        }
+        else
+        {
+            // mIndex++;
+            // mIncrease = 1;
+        }
+        spendMoney = mIndexVecVec.size()*2*changeValue;
+        mSpendMoney = mSpendMoney - spendMoney + 173*bingo;
+        printf("此次购买彩票[%d]次数花费%ld元,截止目前盈收%ld元，一共中了%d个号码.\r\n", mIncrease, spendMoney, mSpendMoney, mBingoNum);
+        if(mIndex < static_cast<long>(mDatasUntilNow.size()))
+        {
+            printf("the 目标值为:%d, %d\r\n", mDatasUntilNow[mIndex][0], mDatasUntilNow[mIndex][1]);
+            loopOperate(to_string(mDatasUntilNow[mIndex][0]));
+        }
+    }
+    return;
 }

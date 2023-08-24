@@ -127,7 +127,7 @@ public:
     template <class T>
     string NumberToString(T value);
     template <class T>
-    T stringToNumber(const string str);
+    T stringToNumber(const string &str);
 
 private:
     sqlite3*    mDb;

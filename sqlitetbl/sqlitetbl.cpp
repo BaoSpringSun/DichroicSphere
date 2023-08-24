@@ -6,7 +6,7 @@
 #include "sqlitetbl.hpp"
 using namespace std;
 
-atomic<bool> sqlite_tb::mDebug = false;
+atomic<bool> sqlite_tb::mDebug(false);
 
 sqlite_tb::sqlite_tb(const char* dbFile)
     : mDb(NULL)
@@ -59,7 +59,7 @@ string sqlite_tb::NumberToString(T value)
 }
 
 template <class T>
-T sqlite_tb::stringToNumber(const string str)
+T sqlite_tb::stringToNumber(const string &str)
 {
     T number {};
     /* can auto remove leading 0 */
